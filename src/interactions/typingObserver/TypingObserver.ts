@@ -453,4 +453,3 @@ export function observeTyping(
 ): TypingObserver {
   return new TypingObserver(target, options);
 }
-export * from "@/interactions/typingObserver/TypingObserver";

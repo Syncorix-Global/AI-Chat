@@ -11,12 +11,14 @@
     "esModuleInterop": true,
     "resolveJsonModule": true,
     "lib": ["ES2020", "DOM"],
+    "jsx": "react-jsx",
     "baseUrl": ".",
     "paths": {
       "@*": ["src/*"],
       "@interactions/*": ["src/interactions/*"],
       "@typingObserver/*": ["src/interactions/typingObserver/*"],
-      "@tests/*": ["tests/*"]
+      "@tests/*": ["tests/*"],
+      "@sockets/*": ["src/sockets/*"]
     }
   },
   "include": ["src", "tests"]

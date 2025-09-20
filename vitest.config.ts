@@ -11,7 +11,8 @@ export default defineConfig({
       { find: /^@\/(.*)$/, replacement: path.resolve(__dirname, "src/$1") },
       { find: /^@interactions\/(.*)$/, replacement: path.resolve(__dirname, "src/interactions/$1") },
       { find: /^@typingObserver\/(.*)$/, replacement: path.resolve(__dirname, "src/interactions/typingObserver/$1") },
-      { find: /^@tests\/(.*)$/, replacement: path.resolve(__dirname, "tests/$1") }
+      { find: /^@tests\/(.*)$/, replacement: path.resolve(__dirname, "tests/$1") },
+       { find: /^@sockets\/(.*)$/, replacement: path.resolve(__dirname, "src/sockets/$1") }
     ]
   }
 });

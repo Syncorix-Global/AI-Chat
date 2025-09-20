@@ -1,0 +1,22 @@
+{
+  "name": "ai-chat-playground",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --open",
+    "build": "vite build",
+    "preview": "vite preview --open"
+  },
+  "dependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "vitepress": "^1.6.4"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@vitejs/plugin-react-swc": "^3.7.1",
+    "typescript": "^5.5.4",
+    "vite": "^5.4.0"
+  }
+}

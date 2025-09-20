@@ -1,7 +1,11 @@
 {
-  "name": "@syncorix/consultation",
+  "name": "@syncorix/ai-chat-sdk",
   "version": "0.1.0",
   "description": "A small library that works great in Vite.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Syncorix-Global/AI-Chat.git"
+  },
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.mjs",
@@ -11,6 +15,19 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.mjs",
       "require": "./dist/index.cjs"
+    },
+    "./typing-observer": {
+      "types": "./dist/typing-observer.d.ts",
+      "import": "./dist/typing-observer.mjs",
+      "require": "./dist/typing-observer.cjs"
+    },
+    "./package.json": "./package.json"
+  },
+  "typesVersions": {
+    "*": {
+      "typing-observer": [
+        "dist/typing-observer.d.ts"
+      ]
     }
   },
   "files": [
@@ -19,11 +36,22 @@
   "packageManager": "pnpm@9.15.9",
   "sideEffects": false,
   "scripts": {
-    "build": "tsup",
+    "build": "tsup src/index.ts --dts",
+    "lint": "eslint .",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
     "dev": "tsup --watch",
     "test": "vitest run",
     "test:watch": "vitest",
-    "prepublishOnly": "pnpm run build && pnpm test"
+    "prepublishOnly": "pnpm run build && pnpm test",
+    "mock:dev": "pnpm --filter mock-ai-chat-server dev",
+    "playground:dev": "pnpm --filter ai-chat-playground dev",
+    "dev:all": "concurrently -k \"pnpm mock:dev\" \"pnpm playground:dev\"",
+    "docs:dev": "vitepress dev docs",
+    "docs:build": "vitepress build docs",
+    "docs:preview": "vitepress preview docs",
+    "prepare": "husky",
+    "lint-staged": "lint-staged",
+    "commitlint": "commitlint"
   },
   "engines": {
     "node": ">=18"
@@ -35,12 +63,23 @@
     "typescript"
   ],
   "devDependencies": {
+    "@commitlint/cli": "^19.8.1",
+    "@commitlint/config-conventional": "^19.8.1",
+    "@types/jsdom": "^21.1.7",
     "@types/node": "^24.5.2",
     "@types/react": "^19.1.13",
-    "jsdom": "^27.0.0",
+    "@types/react-dom": "^19.1.9",
+    "@typescript-eslint/eslint-plugin": "^8.8.0",
+    "@typescript-eslint/parser": "^8.8.0",
+    "concurrently": "^9.2.1",
+    "eslint": "^9.12.0",
+    "husky": "^9.1.6",
+    "jsdom": "^25.0.1",
+    "lint-staged": "^15.2.10",
     "react": "^19.1.1",
     "tsup": "^8.5.0",
     "typescript": "^5.9.2",
+    "vitepress": "^1.6.4",
     "vitest": "^3.2.4"
   },
   "peerDependencies": {
@@ -50,5 +89,11 @@
     "react": {
       "optional": true
     }
+  },
+  "dependencies": {
+    "socket.io-client": "^4.8.1"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,jsx,cjs,mjs}": "eslint --fix"
   }
 }

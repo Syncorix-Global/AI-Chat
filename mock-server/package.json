@@ -1,0 +1,17 @@
+{
+  "name": "mock-ai-chat-server",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch server.ts"
+  },
+  "dependencies": {
+    "socket.io": "^4.8.0",
+    "uuid": "^9.0.0"
+  },
+  "devDependencies": {
+    "ts-node": "^10.9.2",
+    "tsx": "^4.20.5",
+    "typescript": "^5.5.4"
+  }
+}

@@ -1,0 +1,4 @@
+{
+  "*.{ts,tsx,js,jsx,cjs,mjs}": "eslint --fix",
+  "*.json": "jq . >/dev/null || true"
+}

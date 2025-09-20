@@ -1,0 +1,2 @@
+// Optional snippet: make VitePress 'base' configurable via env for GitHub Pages project sites
+// In docs/.vitepress/config.ts add: base: process.env.DOCS_BASE || '/'
