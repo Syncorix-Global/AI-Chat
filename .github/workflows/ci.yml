@@ -10,7 +10,6 @@ permissions:
   contents: read
 
 jobs:
-  # Core library quality gate
   core:
     name: Core • Node ${{ matrix.node }}
     runs-on: ubuntu-latest
@@ -24,8 +23,7 @@ jobs:
 
       - name: Setup PNPM
         uses: pnpm/action-setup@v4
-        with:
-          version: 9
+        # no "version" here; uses package.json: "packageManager": "pnpm@9.15.9"
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -50,15 +48,12 @@ jobs:
       - name: Build
         run: pnpm run build
 
-  # Make sure docs still build
   docs-check:
     name: Docs build check
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
-        with:
-          version: 9
       - uses: actions/setup-node@v4
         with:
           node-version: 21.7.3
@@ -66,15 +61,12 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm docs:build
 
-  # Make sure the Vite playground still builds (with the correct base path)
   playground-check:
     name: Playground build check
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
-        with:
-          version: 9
       - uses: actions/setup-node@v4
         with:
           node-version: 21.7.3
