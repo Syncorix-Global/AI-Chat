@@ -1,17 +1,16 @@
 import { defineConfig } from "vitepress";
 
-// Hard-set base for GitHub Pages *project* site: https://syncorix-global.github.io/AI-Chat/
 export default defineConfig({
-  base: "/AI-Chat/",                    // critical for CSS/JS paths on Pages
+  // REQUIRED for GitHub Pages project site: https://syncorix-global.github.io/AI-Chat/
+  base: "/AI-Chat/",
   title: "Syncorix AI Chat SDK",
   description: "Type-safe Socket.IO SDK for real-time AI chat UIs",
 
-  // If you reference assets manually, use absolute paths including base:
+  // If you reference assets manually, use the base-prefixed path:
   head: [["link", { rel: "icon", href: "/AI-Chat/logo.png" }]],
 
   themeConfig: {
     logo: "/AI-Chat/logo.png",
-
     nav: [
       { text: "Overview", link: "/overview" },
       { text: "Getting Started", link: "/getting-started" },
@@ -26,9 +25,9 @@ export default defineConfig({
         {
           text: "Introduction",
           items: [
-            { text: "Overview", link: "/overview" },          // docs/overview.md
+            { text: "Overview", link: "/overview" },              // docs/overview.md
             { text: "Getting Started", link: "/getting-started" }, // docs/getting-started.md
-            { text: "Contributing", link: "/contributing" }   // docs/contributing.md
+            { text: "Contributing", link: "/contributing" }       // docs/contributing.md
           ]
         },
         {
@@ -43,13 +42,12 @@ export default defineConfig({
         {
           text: "Typing",
           items: [
-            { text: "Typing Overview", link: "/typing/overview" },           // docs/typing/overview.md
-            { text: "Typing (entry)", link: "/typing/" }                     // docs/typing/index.md
+            { text: "Typing Overview", link: "/typing/overview" }, // docs/typing/overview.md
+            { text: "Typing (entry)", link: "/typing/" }           // docs/typing/index.md
           ]
         }
-      ],
+      ]
     },
-
     footer: {
       message: "MIT Licensed",
       copyright: `© ${new Date().getFullYear()} Syncorix`
