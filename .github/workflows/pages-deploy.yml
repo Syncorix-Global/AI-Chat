@@ -15,6 +15,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # Build VitePress docs and upload artifact
   build-docs:
     runs-on: ubuntu-latest
     steps:
@@ -25,6 +26,7 @@ jobs:
         with:
           artifact-name: docs-dist
 
+  # Build playground and upload artifact
   build-playground:
     runs-on: ubuntu-latest
     steps:
@@ -36,6 +38,7 @@ jobs:
           artifact-name: playground-dist
           base-subpath: "/${{ github.event.repository.name }}/playground/"
 
+  # Merge artifacts and deploy to Pages
   merge-and-deploy:
     runs-on: ubuntu-latest
     needs: [ build-docs, build-playground ]
@@ -79,25 +82,37 @@ jobs:
           mkdir -p site/docs/playground
           cp -r site/playground/* site/docs/playground/ || true
 
-      - name: Ensure homepage
+      - name: Ensure homepage (robust)
         run: |
+          set -e
           ROOT=site/docs
-          if [ ! -f "$ROOT/index.html" ]; then
-            TARGET=""
-            if [ -f "$ROOT/guide/index.html" ]; then
-              TARGET="guide/"
-            elif [ -f "$ROOT/guide/overview/index.html" ]; then
-              TARGET="guide/overview/"
-            fi
-            if [ -n "$TARGET" ]; then
-              echo "Creating redirect index.html to $TARGET"
-              echo '<!doctype html><meta http-equiv="refresh" content="0; url='"$TARGET"'"><link rel="canonical" href="'"$TARGET"'">' > "$ROOT/index.html"
-            else
-              echo "No index.html found and no fallback target"
-              ls -la "$ROOT"
-              exit 1
-            fi
+          if [ -f "$ROOT/index.html" ]; then
+            echo "Found root index.html"
+            exit 0
           fi
+
+          pick_target () {
+            if [ -f "$ROOT/guide/overview.html" ]; then echo "guide/overview.html"; return; fi
+            if [ -f "$ROOT/overview.html" ]; then echo "overview.html"; return; fi
+            for p in guide socket typing; do
+              if [ -f "$ROOT/$p/overview.html" ]; then echo "$p/overview.html"; return; fi
+              hit=$(find "$ROOT/$p" -maxdepth 1 -type f -name '*.html' 2>/dev/null | head -n1)
+              if [ -n "$hit" ]; then echo "${hit#$ROOT/}"; return; fi
+            done
+            hit=$(find "$ROOT" -maxdepth 1 -type f -name '*.html' ! -name '404.html' ! -name 'index.html' | head -n1)
+            if [ -n "$hit" ]; then echo "${hit#$ROOT/}"; return; fi
+            echo ""
+          }
+
+          TARGET=$(pick_target)
+          if [ -z "$TARGET" ]; then
+            echo "No suitable entry page found under $ROOT"
+            ls -la "$ROOT"
+            exit 1
+          fi
+
+          echo "Creating redirect index.html to $TARGET"
+          echo '<!doctype html><meta http-equiv="refresh" content="0; url='"$TARGET"'"><link rel="canonical" href="'"$TARGET"'">' > "$ROOT/index.html"
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
