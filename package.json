@@ -6,10 +6,14 @@
     "type": "git",
     "url": "git+https://github.com/Syncorix-Global/AI-Chat.git"
   },
-   "author": {
+  "author": {
     "name": "Tosin Felixson-Yusuf",
     "email": "tosin@syncorixglobal.com",
     "url": "https://github.com/Syncorix-Global"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org"
   },
   "type": "module",
   "main": "./dist/index.cjs",
