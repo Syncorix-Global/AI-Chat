@@ -5,7 +5,7 @@ description: What this package provides and how it fits together
 
 # Overview
 
-**Syncorix Consultation** is a small, typed client for real-time chat and input UX.
+**Syncorix AI Chat SDK** is a small, typed client for real-time chat and input UX.
 
 - **Socket Layer**
   - `ChatEvents.ts`: the shared event contract

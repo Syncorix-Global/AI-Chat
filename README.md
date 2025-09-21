@@ -1,4 +1,4 @@
-# Syncorix Consultation
+# Syncorix AI Chat SDK
 
 Typed realtime chat + typing UX for AI chat applications.  
 This package provides a **Socket.IO client wrapper** and **typing observer** with strong TypeScript contracts, plus a playground and mock server for development.
@@ -22,7 +22,7 @@ This package provides a **Socket.IO client wrapper** and **typing observer** wit
 ## 📦 Installation
 
 ```bash
-pnpm i @syncorix/consultation
+pnpm i @syncorix/AI Chat SDK
 ```
 
 ---
@@ -84,7 +84,7 @@ chat.markRead({
 Detect when a user is typing, pausing, or stopping.
 
 ```ts
-import { observeTyping, TypingObserverEvent } from "@syncorix/consultation/typing";
+import { observeTyping, TypingObserverEvent } from "@syncorix/AI Chat SDK/typing";
 
 const ob = observeTyping("#message", { pauseDelay: 700, stopDelay: 1400 });
 

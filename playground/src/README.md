@@ -118,7 +118,7 @@ pnpm build           # build library
 
 # AI Chat & TypingObserver Playground
 
-This is the **demo playground** for the `@syncorix/consultation` library.  
+This is the **demo playground** for the `@syncorix/AI Chat SDK` library.  
 It lets you run both:
 
 - **AI Chat Demo** — using `AIChatSocket` to connect to the mock Socket.IO server.
