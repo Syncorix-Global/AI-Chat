@@ -1,0 +1,41 @@
+name: 'Build VitePress Docs'
+description: 'Builds docs and uploads as artifact'
+inputs:
+  node-version:
+    description: 'Node version'
+    required: false
+    default: '21.7.3'
+  artifact-name:
+    description: 'Artifact name to upload'
+    required: false
+    default: 'docs-dist'
+runs:
+  using: 'composite'
+  steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Setup PNPM
+      uses: pnpm/action-setup@v4
+      # no "version" here; action will use package.json: "packageManager": "pnpm@9.15.9"
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ inputs.node-version }}
+        cache: 'pnpm'
+
+    - name: Install dependencies
+      shell: bash
+      run: pnpm install --frozen-lockfile
+
+    - name: Build docs
+      shell: bash
+      run: pnpm docs:build
+
+    - name: Upload docs artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ inputs.artifact-name }}
+        path: docs/.vitepress/dist
+        if-no-files-found: error

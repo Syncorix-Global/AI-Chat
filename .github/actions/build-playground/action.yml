@@ -1,0 +1,52 @@
+name: 'Build Vite Playground'
+description: 'Builds Vite playground and uploads as artifact'
+inputs:
+  node-version:
+    description: 'Node version'
+    required: false
+    default: '21.7.3'
+  artifact-name:
+    description: 'Artifact name to upload'
+    required: false
+    default: 'playground-dist'
+  base-subpath:
+    description: 'Base subpath for the Vite build (e.g., /<repo>/playground/)'
+    required: true
+runs:
+  using: 'composite'
+  steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Setup PNPM
+      uses: pnpm/action-setup@v4
+      # no "version" here; action will use package.json: "packageManager": "pnpm@9.15.9"
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ inputs.node-version }}
+        cache: 'pnpm'
+
+    - name: Install deps (root)
+      shell: bash
+      run: pnpm install --frozen-lockfile
+
+    - name: Install deps (playground)
+      shell: bash
+      working-directory: playground
+      run: pnpm install --frozen-lockfile
+
+    - name: Build playground with base path
+      shell: bash
+      working-directory: playground
+      run: |
+        pnpm build -- --base "${{ inputs.base-subpath }}"
+        cp dist/index.html dist/404.html
+
+    - name: Upload playground artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ inputs.artifact-name }}
+        path: playground/dist
+        if-no-files-found: error

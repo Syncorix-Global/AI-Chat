@@ -1,0 +1,6 @@
+# bump version in package.json and create a tag
+pnpm version patch     # or minor / major / 0.1.1
+
+# push commit and tag
+git push
+git push --tags

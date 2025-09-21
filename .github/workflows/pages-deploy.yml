@@ -1,0 +1,68 @@
+name: pages-deploy
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build-docs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Build docs
+        uses: ./.github/actions/build-docs
+        with:
+          artifact-name: docs-dist
+
+  build-playground:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Build playground
+        uses: ./.github/actions/build-playground
+        with:
+          artifact-name: playground-dist
+          base-subpath: "/${{ github.event.repository.name }}/playground/"
+
+  merge-and-deploy:
+    runs-on: ubuntu-latest
+    needs: [build-docs, build-playground]
+    steps:
+      - name: Download docs
+        uses: actions/download-artifact@v4
+        with:
+          name: docs-dist
+          path: site/docs
+
+      - name: Download playground
+        uses: actions/download-artifact@v4
+        with:
+          name: playground-dist
+          path: site/playground
+
+      - name: Merge playground into docs site
+        run: |
+          mkdir -p site/docs/playground
+          cp -r site/playground/* site/docs/playground/
+
+      - name: Upload pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site/docs
+
+  deploy:
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    needs: merge-and-deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deploy
+        uses: actions/deploy-pages@v4

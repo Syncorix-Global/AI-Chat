@@ -5,3 +5,9 @@ dist
 .DS_Store
 *.log
 *.tgz
+docs
+mock-server
+playground
+docs/*
+mock-server/*
+playground/*
