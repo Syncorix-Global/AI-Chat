@@ -1,16 +1,21 @@
 import { defineConfig } from "vitepress";
 
+const repoFromCI =
+  (process.env.GITHUB_REPOSITORY && process.env.GITHUB_REPOSITORY.split("/")[1]) || "AI-Chat";
+
+const base = process.env.BASE_PATH || `/${repoFromCI}/`; // "/" on preview, "/AI-Chat/" on prod
+
 export default defineConfig({
-  // REQUIRED for GitHub Pages project site: https://syncorix-global.github.io/AI-Chat/
-  base: "/AI-Chat/",
+  base,
   title: "Syncorix AI Chat SDK",
   description: "Type-safe Socket.IO SDK for real-time AI chat UIs",
 
-  // If you reference assets manually, use the base-prefixed path:
-  head: [["link", { rel: "icon", href: "/AI-Chat/logo.png" }]],
+  // Leading slash paths are resolved with `base`, so /logo.png -> /<base>/logo.png
+  head: [["link", { rel: "icon", href: "/logo.png" }]],
 
   themeConfig: {
-    logo: "/AI-Chat/logo.png",
+    logo: "/logo.png",
+
     nav: [
       { text: "Overview", link: "/overview" },
       { text: "Getting Started", link: "/getting-started" },
@@ -25,29 +30,30 @@ export default defineConfig({
         {
           text: "Introduction",
           items: [
-            { text: "Overview", link: "/overview" },              // docs/overview.md
-            { text: "Getting Started", link: "/getting-started" }, // docs/getting-started.md
-            { text: "Contributing", link: "/contributing" }       // docs/contributing.md
+            { text: "Overview", link: "/overview" },
+            { text: "Getting Started", link: "/getting-started" },
+            { text: "Contributing", link: "/contributing" }
           ]
         },
         {
           text: "Socket",
           items: [
-            { text: "Socket Overview", link: "/socket/overview" },           // docs/socket/overview.md
-            { text: "Chat Events (contract)", link: "/socket/chat-events" }, // docs/socket/chat-events.md
-            { text: "SocketService (base)", link: "/socket/socket-service" },// docs/socket/socket-service.md
-            { text: "AIChatSocket (high-level)", link: "/socket/ai-chat-socket" } // docs/socket/ai-chat-socket.md
+            { text: "Socket Overview", link: "/socket/overview" },
+            { text: "Chat Events (contract)", link: "/socket/chat-events" },
+            { text: "SocketService (base)", link: "/socket/socket-service" },
+            { text: "AIChatSocket (high-level)", link: "/socket/ai-chat-socket" }
           ]
         },
         {
           text: "Typing",
           items: [
-            { text: "Typing Overview", link: "/typing/overview" }, // docs/typing/overview.md
-            { text: "Typing (entry)", link: "/typing/" }           // docs/typing/index.md
+            { text: "Typing Overview", link: "/typing/overview" },
+            { text: "Typing (entry)", link: "/typing/" }
           ]
         }
       ]
     },
+
     footer: {
       message: "MIT Licensed",
       copyright: `© ${new Date().getFullYear()} Syncorix`

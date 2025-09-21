@@ -21,12 +21,26 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      # Decide BASE_PATH: prod (main/master) uses /AI-Chat/, previews use /
+      - name: Decide BASE_PATH for this build
+        shell: bash
+        run: |
+          if [[ "${{ github.ref_name }}" == "main" || "${{ github.ref_name }}" == "master" ]]; then
+            echo "BASE_PATH=/AI-Chat/" >> "$GITHUB_ENV"
+          else
+            echo "BASE_PATH=/" >> "$GITHUB_ENV"
+          fi
+          echo "Using BASE_PATH=$BASE_PATH"
+
       - name: Build docs
         uses: ./.github/actions/build-docs
         with:
-          artifact-name: docs-dist   # uploads docs/.vitepress/dist (via pnpm docs:build)
+          artifact-name: docs-dist
+        env:
+          BASE_PATH: ${{ env.BASE_PATH }}
 
-  # Build playground and upload artifact (optional but you already use it)
+  # Build playground and upload artifact
   build-playground:
     runs-on: ubuntu-latest
     steps:
@@ -82,21 +96,6 @@ jobs:
           mkdir -p site/docs/playground
           cp -r site/playground/* site/docs/playground/ || true
 
-      # Make sure assets will load under /AI-Chat/
-      - name: Verify asset paths
-        run: |
-          ROOT=site/docs
-          test -d "$ROOT/assets" || (echo "assets/ missing in artifact" && ls -la "$ROOT" && exit 1)
-          # check any root page references /AI-Chat/assets
-          CAND=$(ls "$ROOT"/*.html 2>/dev/null | head -n1 || true)
-          if [ -n "$CAND" ]; then
-            if ! grep -q '/AI-Chat/assets/' "$CAND"; then
-              echo "Expected '/AI-Chat/assets/' in $CAND but didn't find it."
-              head -n 60 "$CAND" || true
-              exit 1
-            fi
-          fi
-
       # Ensure a homepage exists; if not, create a redirect to a good entry page.
       - name: Ensure homepage (robust)
         run: |
@@ -106,6 +105,7 @@ jobs:
             echo "Found root index.html"
             exit 0
           fi
+
           pick_target () {
             if [ -f "$ROOT/guide/overview.html" ]; then echo "guide/overview.html"; return; fi
             if [ -f "$ROOT/overview.html" ]; then echo "overview.html"; return; fi
@@ -118,12 +118,14 @@ jobs:
             if [ -n "$hit" ]; then echo "${hit#$ROOT/}"; return; fi
             echo ""
           }
+
           TARGET=$(pick_target)
           if [ -z "$TARGET" ]; then
             echo "No suitable entry page found under $ROOT"
             ls -la "$ROOT"
             exit 1
           fi
+
           echo "Creating redirect index.html to $TARGET"
           echo '<!doctype html><meta http-equiv="refresh" content="0; url='"$TARGET"'"><link rel="canonical" href="'"$TARGET"'">' > "$ROOT/index.html"
 
