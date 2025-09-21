@@ -1,10 +1,15 @@
 import { defineConfig } from "vitepress";
 
+const repoFromCI =
+  (process.env.GITHUB_REPOSITORY && process.env.GITHUB_REPOSITORY.split('/')[1]) || 'AI-Chat'
+
+const base = process.env.BASE_PATH || `/${repoFromCI}/`
+
 export default defineConfig({
   title: "Syncorix AI Chat SDK",
   description:
     "Type-safe Socket.IO SDK for building real-time AI chat UIs in the browser: streaming tokens, typing indicators, presence, and resilient reconnects.",
-    base: '/AI-Chat/',
+  base,
   head: [["link", { rel: "icon", href: "/logo.png" }]],
   themeConfig: {
     logo: "/logo.png",

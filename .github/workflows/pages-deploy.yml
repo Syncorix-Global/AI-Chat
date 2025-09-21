@@ -1,3 +1,4 @@
+# .github/workflows/pages-deploy.yml
 name: pages-deploy
 
 on:
@@ -37,11 +38,18 @@ jobs:
         with:
           artifact-name: playground-dist
           base-subpath: "/${{ github.event.repository.name }}/playground/"
+          # workdir: 'playground' # change only if your folder name differs
 
   merge-and-deploy:
     runs-on: ubuntu-latest
     needs: [build-docs, build-playground]
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
     steps:
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
       - name: Download docs
         uses: actions/download-artifact@v4
         with:
@@ -52,6 +60,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: playground-dist
+        # we’ll merge into docs folder at /playground
           path: site/playground
 
       - name: Merge playground into docs site
@@ -59,16 +68,17 @@ jobs:
           mkdir -p site/docs/playground
           cp -r site/playground/* site/docs/playground/
 
-      - name: Upload pages artifact
+      - name: Sanity check output
+        run: |
+          test -f site/docs/index.html || (echo "index.html missing" && exit 1)
+          echo "Deployed root contains:"
+          ls -la site/docs | sed -n '1,80p'
+
+      - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: site/docs
 
-  deploy:
-    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
-    needs: merge-and-deploy
-    runs-on: ubuntu-latest
-    steps:
       - name: Deploy to GitHub Pages
         id: deploy
         uses: actions/deploy-pages@v4

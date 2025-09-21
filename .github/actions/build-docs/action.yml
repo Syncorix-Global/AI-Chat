@@ -1,3 +1,4 @@
+# .github/actions/build-docs/action.yml
 name: 'Build VitePress Docs'
 description: 'Builds VitePress docs and uploads as artifact'
 inputs:
@@ -12,9 +13,7 @@ inputs:
 runs:
   using: 'composite'
   steps:
-    - name: Checkout
-      uses: actions/checkout@v4
-
+    # (Checkout is done in the workflow before calling this action)
     - name: Setup PNPM
       uses: pnpm/action-setup@v4
 
@@ -29,9 +28,11 @@ runs:
       shell: bash
       run: pnpm install --frozen-lockfile
 
-    - name: Build docs
+    - name: Build docs (with explicit base for Pages)
       shell: bash
       run: pnpm docs:build
+      env:
+        BASE_PATH: "/AI-Chat/"
 
     - name: Upload docs artifact
       uses: actions/upload-artifact@v4
