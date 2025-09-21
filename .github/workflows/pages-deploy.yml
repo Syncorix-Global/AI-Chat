@@ -40,7 +40,7 @@ jobs:
         env:
           BASE_PATH: ${{ env.BASE_PATH }}
 
-  # Build playground and upload artifact
+  # Build playground and upload artifact (optional)
   build-playground:
     runs-on: ubuntu-latest
     steps:
@@ -95,6 +95,13 @@ jobs:
         run: |
           mkdir -p site/docs/playground
           cp -r site/playground/* site/docs/playground/ || true
+
+      # 🔧 Preview compatibility: mirror the site under /AI-Chat/ so previews also have those paths
+      - name: Add preview mirror at /AI-Chat/
+        run: |
+          set -e
+          mkdir -p site/docs/AI-Chat
+          rsync -a --delete --exclude 'AI-Chat/' site/docs/ site/docs/AI-Chat/
 
       # Ensure a homepage exists; if not, create a redirect to a good entry page.
       - name: Ensure homepage (robust)
