@@ -1,6 +1,6 @@
 {
   "name": "@syncorix/ai-chat-sdk",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "A small library that works great in Vite.",
   "repository": {
     "type": "git",
