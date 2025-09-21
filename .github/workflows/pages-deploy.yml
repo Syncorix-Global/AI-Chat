@@ -18,6 +18,9 @@ jobs:
   build-docs:
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
       - name: Build docs
         uses: ./.github/actions/build-docs
         with:
@@ -26,6 +29,9 @@ jobs:
   build-playground:
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
       - name: Build playground
         uses: ./.github/actions/build-playground
         with:

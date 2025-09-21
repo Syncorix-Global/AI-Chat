@@ -1,5 +1,5 @@
 name: 'Build VitePress Docs'
-description: 'Builds docs and uploads as artifact'
+description: 'Builds VitePress docs and uploads as artifact'
 inputs:
   node-version:
     description: 'Node version'
@@ -17,15 +17,15 @@ runs:
 
     - name: Setup PNPM
       uses: pnpm/action-setup@v4
-      # no "version" here; action will use package.json: "packageManager": "pnpm@9.15.9"
 
-    - name: Setup Node.js
+    - name: Setup Node
       uses: actions/setup-node@v4
       with:
         node-version: ${{ inputs.node-version }}
         cache: 'pnpm'
+        registry-url: 'https://registry.npmjs.org'
 
-    - name: Install dependencies
+    - name: Install deps
       shell: bash
       run: pnpm install --frozen-lockfile
 
