@@ -1,10 +1,15 @@
 {
   "name": "@syncorix/ai-chat-sdk",
   "version": "0.1.1",
-  "description": "A small library that works great in Vite.",
+  "description": "Type-safe Socket.IO SDK for building real-time AI chat UIs in the browser (streaming tokens, typing indicators, presence, reconnects).",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Syncorix-Global/AI-Chat.git"
+  },
+   "author": {
+    "name": "Tosin Felixson-Yusuf",
+    "email": "tosin@syncorixglobal.com",
+    "url": "https://github.com/Syncorix-Global"
   },
   "type": "module",
   "main": "./dist/index.cjs",
