@@ -81,7 +81,7 @@ export class SocketService<E extends EventMapLike> {
     });
 
     this.socket.on(this.serverErrorEvent, (err: unknown) => {
-      // eslint-disable-next-line no-console
+       
       console.error("[SocketService] Server error:", err);
     });
 
