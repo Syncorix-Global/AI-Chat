@@ -15,115 +15,95 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # --- Build VitePress docs and upload as artifact ---
   build-docs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
-      # Uses your composite action at .github/actions/build-docs/action.yml
       - name: Build docs
         uses: ./.github/actions/build-docs
         with:
           artifact-name: docs-dist
 
-  # --- Build playground (optional) and upload as artifact ---
   build-playground:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
-      # Uses your composite action at .github/actions/build-playground/action.yml
       - name: Build playground
         uses: ./.github/actions/build-playground
         with:
           artifact-name: playground-dist
           base-subpath: "/${{ github.event.repository.name }}/playground/"
 
-  # --- Merge artifacts and deploy to Pages ---
   merge-and-deploy:
     runs-on: ubuntu-latest
-    needs:
-      - build-docs
-      - build-playground
+    needs: [ build-docs, build-playground ]
     environment:
       name: github-pages
-      # must match the step id below
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Configure Pages
         uses: actions/configure-pages@v5
 
-      # Download docs artifact into site/docs/
       - name: Download docs
         uses: actions/download-artifact@v4
         with:
           name: docs-dist
           path: site/docs
 
-      # Flatten docs artifact (download-artifact nests by artifact name)
       - name: Flatten docs artifact
-        shell: bash
         run: |
-          set -e
           shopt -s dotglob
           if [ -d "site/docs/docs-dist" ]; then
             mv site/docs/docs-dist/* site/docs/
             rmdir site/docs/docs-dist
           fi
 
-      # Download playground artifact into site/playground/
       - name: Download playground
         uses: actions/download-artifact@v4
         with:
           name: playground-dist
           path: site/playground
 
-      # Flatten playground artifact
       - name: Flatten playground artifact
-        shell: bash
         run: |
-          set -e
           shopt -s dotglob
           if [ -d "site/playground/playground-dist" ]; then
             mv site/playground/playground-dist/* site/playground/
             rmdir site/playground/playground-dist
           fi
 
-      # Merge playground into the docs site under /playground
       - name: Merge playground into docs site
-        shell: bash
         run: |
-          set -e
           mkdir -p site/docs/playground
           cp -r site/playground/* site/docs/playground/ || true
 
-      # Sanity check: ensure a homepage exists
-      - name: Sanity check output
-        shell: bash
+      - name: Ensure homepage
         run: |
-          set -e
           ROOT=site/docs
-          if [ -f "$ROOT/index.html" ]; then
-            echo "Found index.html"
-          elif [ -f "$ROOT/guide/overview/index.html" ]; then
-            echo "Found guide/overview as entry"
-          else
-            echo "No index.html or guide/overview/index.html found"
-            echo "Tree under $ROOT:"
-            ls -la $ROOT
-            exit 1
+          if [ ! -f "$ROOT/index.html" ]; then
+            TARGET=""
+            if [ -f "$ROOT/guide/index.html" ]; then
+              TARGET="guide/"
+            elif [ -f "$ROOT/guide/overview/index.html" ]; then
+              TARGET="guide/overview/"
+            fi
+            if [ -n "$TARGET" ]; then
+              echo "Creating redirect index.html to $TARGET"
+              echo '<!doctype html><meta http-equiv="refresh" content="0; url='"$TARGET"'"><link rel="canonical" href="'"$TARGET"'">' > "$ROOT/index.html"
+            else
+              echo "No index.html found and no fallback target"
+              ls -la "$ROOT"
+              exit 1
+            fi
           fi
 
-      # Upload site/docs as the Pages artifact
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: site/docs
 
-      # Deploy to GitHub Pages
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
