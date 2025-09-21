@@ -53,7 +53,6 @@ export default defineConfig({
         }
       ]
     },
-
     footer: {
       message: "MIT Licensed",
       copyright: `© ${new Date().getFullYear()} Syncorix`
