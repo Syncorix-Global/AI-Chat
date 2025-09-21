@@ -1,4 +1,3 @@
-// docs/.vitepress/config.ts
 import { defineConfig } from "vitepress";
 
 export default defineConfig({
@@ -20,6 +19,7 @@ export default defineConfig({
       { text: "Contributing", link: "/contributing" },
       { text: "Playground", link: "/playground" }
     ],
+
     sidebar: {
       "/": [
         {
