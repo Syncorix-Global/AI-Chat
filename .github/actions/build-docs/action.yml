@@ -26,7 +26,7 @@ runs:
       shell: bash
       run: pnpm install --frozen-lockfile
 
-    # NOTE: BASE_PATH is provided by the caller workflow (env)
+    # BASE_PATH is injected by the caller workflow
     - name: Build docs
       shell: bash
       run: pnpm docs:build
