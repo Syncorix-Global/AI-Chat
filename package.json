@@ -51,7 +51,8 @@
     "docs:preview": "vitepress preview docs",
     "prepare": "husky",
     "lint-staged": "lint-staged",
-    "commitlint": "commitlint"
+    "commitlint": "commitlint",
+    "release": "chmod +x release && ./release"
   },
   "engines": {
     "node": ">=18"
