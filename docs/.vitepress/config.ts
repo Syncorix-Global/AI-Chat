@@ -1,9 +1,10 @@
+// docs/.vitepress/config.ts
 import { defineConfig } from "vitepress";
 
 const repoFromCI =
-  (process.env.GITHUB_REPOSITORY && process.env.GITHUB_REPOSITORY.split('/')[1]) || 'AI-Chat'
+  (process.env.GITHUB_REPOSITORY && process.env.GITHUB_REPOSITORY.split("/")[1]) || "AI-Chat";
 
-const base = process.env.BASE_PATH || `/${repoFromCI}/`
+const base = process.env.BASE_PATH || `/${repoFromCI}/`;
 
 export default defineConfig({
   title: "Syncorix AI Chat SDK",
@@ -14,22 +15,14 @@ export default defineConfig({
   themeConfig: {
     logo: "/logo.png",
     nav: [
-      { text: "Guide", link: "/guide/overview" },
+      { text: "Overview", link: "/overview" },
+      { text: "Getting Started", link: "/getting-started" },
       { text: "Socket", link: "/socket/overview" },
       { text: "Typing", link: "/typing/overview" },
-      { text: "Playground", link: "/playground" },
-      { text: "Contribute", link: "/guide/contributing" },
+      { text: "Contributing", link: "/contributing" },
+      { text: "Playground", link: "/playground" }, // static page you added to merged output
     ],
     sidebar: {
-      "/guide/": [
-        {
-          text: "Guide",
-          items: [
-            { text: "Overview", link: "/guide/overview" },
-            { text: "Getting Started", link: "/guide/getting-started" },
-          ],
-        },
-      ],
       "/socket/": [
         {
           text: "Socket",
@@ -37,10 +30,7 @@ export default defineConfig({
             { text: "Overview", link: "/socket/overview" },
             { text: "Chat Events (contract)", link: "/socket/chat-events" },
             { text: "SocketService (base)", link: "/socket/socket-service" },
-            {
-              text: "AIChatSocket (high-level)",
-              link: "/socket/ai-chat-socket",
-            },
+            { text: "AIChatSocket (high-level)", link: "/socket/ai-chat-socket" },
           ],
         },
       ],
@@ -49,25 +39,23 @@ export default defineConfig({
           text: "Typing",
           items: [
             { text: "Overview", link: "/typing/overview" },
-            { text: "TypingObserver API", link: "/typing/typing-observer" },
+            // enable when you add file: { text: "TypingObserver API", link: "/typing/typing-observer" },
           ],
         },
       ],
       "/": [
         {
-          text: "Playground",
+          text: "Introduction",
           items: [
-            { text: "Local Playground & Mock Server", link: "/playground" },
+            { text: "Overview", link: "/overview" },
+            { text: "Getting Started", link: "/getting-started" },
+            { text: "Contributing", link: "/contributing" },
           ],
-        },
-        {
-          text: "Contribute",
-          items: [{ text: "How to Contribute", link: "/guide/contributing" }],
         },
       ],
     },
     socialLinks: [
-      // { icon: 'github', link: 'https://github.com/...' }
+      // { icon: "github", link: "https://github.com/Syncorix-Global/AI-Chat" }
     ],
     footer: {
       message: "MIT Licensed",
