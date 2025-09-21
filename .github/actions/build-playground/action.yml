@@ -1,3 +1,4 @@
+# .github/actions/build-playground/action.yml
 name: 'Build Vite Playground'
 description: 'Builds Vite playground and uploads as artifact'
 inputs:
@@ -19,7 +20,7 @@ inputs:
 runs:
   using: 'composite'
   steps:
-    # (Checkout is handled in the calling workflow; keep it there)
+    # (Checkout is done in the workflow before calling this action)
     - name: Setup PNPM
       uses: pnpm/action-setup@v4
 
@@ -44,15 +45,9 @@ runs:
       run: |
         BASE="${{ inputs.base-subpath }}"
         # ensure leading slash
-        case "$BASE" in
-          /*) ;; 
-          *) BASE="/$BASE" ;;
-        esac
+        case "$BASE" in /*) ;; *) BASE="/$BASE" ;; esac
         # ensure trailing slash
-        case "$BASE" in
-          */) ;;
-          *) BASE="$BASE/" ;;
-        esac
+        case "$BASE" in */) ;; *) BASE="$BASE/" ;; esac
         echo "Building playground with base: $BASE"
         pnpm build -- --base "$BASE"
         # SPA fallback for GitHub Pages
