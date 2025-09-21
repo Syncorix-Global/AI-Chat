@@ -135,7 +135,8 @@ jobs:
 
           echo "Creating redirect index.html to $TARGET"
           echo '<!doctype html><meta http-equiv="refresh" content="0; url='"$TARGET"'"><link rel="canonical" href="'"$TARGET"'">' > "$ROOT/index.html"
-
+      - name: Add CNAME for custom domain
+        run: echo "docs.syncorixglobal.ai" > site/docs/CNAME
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
