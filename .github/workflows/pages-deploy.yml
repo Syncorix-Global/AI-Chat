@@ -21,7 +21,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
       - name: Build docs
         uses: ./.github/actions/build-docs
         with:
@@ -32,7 +31,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
       - name: Build playground
         uses: ./.github/actions/build-playground
         with:

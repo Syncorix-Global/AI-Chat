@@ -1,6 +1,6 @@
 # Contributing
 
-Thanks for helping improve **Syncorix Consultation**!
+Thanks for helping improve **Syncorix AI Chat SDK**!
 
 ## Project Structure
 
