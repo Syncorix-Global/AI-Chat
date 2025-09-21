@@ -1,9 +1,8 @@
-# .github/workflows/pages-deploy.yml
 name: pages-deploy
 
 on:
   push:
-    branches: [main, master]
+    branches: [ main, master ]
   workflow_dispatch:
 
 permissions:
@@ -36,14 +35,16 @@ jobs:
         with:
           artifact-name: playground-dist
           base-subpath: "/${{ github.event.repository.name }}/playground/"
-          # workdir: 'playground' # change only if your folder name differs
 
   merge-and-deploy:
     runs-on: ubuntu-latest
-    needs: [build-docs, build-playground]
+    needs:
+      - build-docs
+      - build-playground
     environment:
       name: github-pages
-      url: ${{ steps.deploy.outputs.page_url }}
+      # NOTE: This must match the step id below ("deployment")
+      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Configure Pages
         uses: actions/configure-pages@v5
@@ -54,12 +55,29 @@ jobs:
           name: docs-dist
           path: site/docs
 
+      - name: Flatten docs artifact
+        shell: bash
+        run: |
+          shopt -s dotglob
+          if [ -d "site/docs/docs-dist" ]; then
+            mv site/docs/docs-dist/* site/docs/
+            rmdir site/docs/docs-dist
+          fi
+
       - name: Download playground
         uses: actions/download-artifact@v4
         with:
           name: playground-dist
-        # we’ll merge into docs folder at /playground
           path: site/playground
+
+      - name: Flatten playground artifact
+        shell: bash
+        run: |
+          shopt -s dotglob
+          if [ -d "site/playground/playground-dist" ]; then
+            mv site/playground/playground-dist/* site/playground/
+            rmdir site/playground/playground-dist
+          fi
 
       - name: Merge playground into docs site
         run: |
@@ -67,10 +85,14 @@ jobs:
           cp -r site/playground/* site/docs/playground/
 
       - name: Sanity check output
+        shell: bash
         run: |
-          test -f site/docs/index.html || (echo "index.html missing" && exit 1)
-          echo "Deployed root contains:"
-          ls -la site/docs | sed -n '1,80p'
+          if [ ! -f "site/docs/index.html" ]; then
+            echo "index.html missing in site/docs"
+            echo "Tree under site/docs:"
+            ls -la site/docs || true
+            exit 1
+          fi
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
@@ -78,5 +100,5 @@ jobs:
           path: site/docs
 
       - name: Deploy to GitHub Pages
-        id: deploy
+        id: deployment
         uses: actions/deploy-pages@v4
