@@ -79,6 +79,24 @@ chat.markRead({
 
 ---
 
+# Syncorix AI Chat SDK
+
+Type-safe Socket.IO SDK for building real-time AI chat UIs in the browser  
+(streaming tokens, typing indicators, presence, reconnects).
+
+---
+
+📖 **Documentation:** [https://docs.syncorixglobal.ai](https://docs.syncorixglobal.ai)
+
+---
+
+## Development
+
+```bash
+pnpm i
+pnpm dev:all      # runs mock-server (4000) + playground (5173)
+pnpm docs:dev     # run docs locally
+
 ## 🧩 Typing Observer
 
 Detect when a user is typing, pausing, or stopping.
