@@ -121,6 +121,82 @@ VITE_USER_ID=user-123
 
 See [CONTRIBUTING.md](./CONTRIBUTING.md) for full details.
 
+## 📦 Release
+
+This package publishes to **npm** via a GitHub Actions workflow that runs on **tags** like `v0.1.1`.  
+The workflow installs deps, runs tests, builds, publishes to npm **with provenance**, and then creates a GitHub Release.
+
+### One-time setup
+
+- In your GitHub repo, add a secret: **`NPM_TOKEN`** (npm → Access Tokens → Automation).
+- Ensure your `package.json` has:
+  ```json
+  {
+    "name": "@syncorix/ai-chat-sdk",
+    "publishConfig": { "access": "public", "registry": "https://registry.npmjs.org" },
+    "packageManager": "pnpm@9.15.9",
+    "engines": { "node": ">=18" }
+  }
+  ```
+- The workflow file lives at: `.github/workflows/release.yml`.
+
+### Tag-based release (recommended)
+
+1. Bump the version locally (updates `package.json` and creates a git tag):
+   ```bash
+   # choose one:
+   pnpm version patch     # 0.1.0 -> 0.1.1
+   pnpm version minor     # 0.1.x -> 0.2.0
+   pnpm version major     # x.y.z -> (x+1).0.0
+   # or set an exact version:
+   pnpm version 0.1.1
+   ```
+
+2. Push the commit and tag:
+   ```bash
+   git push
+   git push --tags
+   ```
+
+3. The **Release (npm)** workflow runs automatically.  
+   When it finishes, your new version is on npm and a GitHub Release is created.
+
+### Manual release (optional)
+
+- Actions → **Release (npm)** → **Run workflow**.  
+- (Optional) provide a `version` input like `patch`, `minor`, `major`, or `0.1.1` to bump `package.json` before publish.
+- The job will **test**, **build**, and **publish** the current HEAD.
+
+### What the workflow enforces
+
+- Uses Node **21.7.3** (configurable).
+- Uses pnpm version from `package.json`’s `packageManager` (no duplicate version pin in the action).
+- Verifies the pushed tag matches `package.json` (e.g., tag `v0.1.1` must equal `"version": "0.1.1"`).
+- Publishes with:
+  ```bash
+  npm publish --provenance --access public
+  ```
+  (requires `id-token: write` permission and the `NPM_TOKEN` secret)
+
+### Troubleshooting
+
+- **Tag mismatch**: “Tag does not match package.json version”
+  ```bash
+  git tag -d vBAD && git push origin :refs/tags/vBAD
+  pnpm version 0.1.1
+  git push && git push --tags
+  ```
+- **pnpm version conflict**: Do **not** set `with: version:` in `pnpm/action-setup@v4` if you already pin pnpm via `package.json`’s `packageManager`.
+- **2FA account**: Use an **Automation** token on npm; classic 2FA tokens won’t work for CI publishes.
+
+### Release checklist
+
+- [ ] All tests pass locally: `pnpm test`
+- [ ] Build succeeds: `pnpm build`
+- [ ] Changelog/README updated if needed
+- [ ] Version bumped and tag pushed (`vX.Y.Z`)
+
+
 ### Highlights
 
 - **Type-first** → All events defined in `ChatEvents.ts` (update both client & server).
