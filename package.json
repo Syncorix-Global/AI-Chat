@@ -45,7 +45,7 @@
   "packageManager": "pnpm@9.15.9",
   "sideEffects": false,
   "scripts": {
-    "build": "tsup src/index.ts --dts",
+    "build": "tsup src/index.ts src/typing-observer.ts --dts --format esm,cjs --sourcemap --clean",
     "lint": "eslint .",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "dev": "tsup --watch",

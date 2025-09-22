@@ -10,7 +10,7 @@
     "skipLibCheck": true,
     "esModuleInterop": true,
     "resolveJsonModule": true,
-    "lib": ["ES2020", "DOM"],
+    "lib": ["ES2022", "DOM"],
     "jsx": "react-jsx",
     "baseUrl": ".",
     "paths": {
@@ -18,7 +18,9 @@
       "@interactions/*": ["src/interactions/*"],
       "@typingObserver/*": ["src/interactions/typingObserver/*"],
       "@tests/*": ["tests/*"],
-      "@sockets/*": ["src/sockets/*"]
+      "@sockets/*": ["src/sockets/*"],
+      "@models/*": ["src/models/*"],
+      "@sdk/*": ["src/sdk/*"]
     }
   },
   "include": ["src", "tests"]

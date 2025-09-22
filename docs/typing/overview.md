@@ -1,13 +1,13 @@
 ---
 title: Typing Overview
-description: Why TypingObserver exists and where it helps
+outline: deep
 ---
 
 # Typing Overview
 
-`TypingObserver` provides consistent typing state detection across:
+`TypingObserver` emits lifecycle events for inputs, textareas, and `[contenteditable]`:
 
-- `<input>`, `<textarea>`, and `[contenteditable]`
-- IME composition (e.g., Chinese/Japanese input)
-- Focus / blur transitions
-- Pause / stop via configurable delays
+- `Focus`, `Blur`
+- `TypingStart`, `Typing`, `TypingPause`, `TypingStop`
+
+It’s IME-aware and tracks selection (optional).

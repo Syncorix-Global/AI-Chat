@@ -1,43 +1,26 @@
 ---
 title: Chat Events (contract)
-description: The single source of truth for all client ⇄ server events
+outline: deep
 ---
 
 # Chat Events (contract)
 
-`ChatEvents.ts` is the **typed source of truth** for every event and payload shape. Keep it shared across client and server to avoid drift.
+Your backend should emit these (or a superset). The TypeScript types live in your project as `ChatEvents`.
 
-## Types
+**Server → Client**
 
-```ts
-export type ChatID = string;
-export type UserID = string | number;
-```
+- `chat:message` → `{ chatId, messageId, userId, text, createdAt }`
+- `ai:processing` → `{ chatId, status: "queued"|"working"|"retrying", etaMs?, reason?, requestId? }`
+- `ai:token` → `{ chatId, token, index, done?: false, requestId? }`
+- `ai:message` → `{ chatId, messageId, role:"assistant", text, createdAt, usage?, options?, requestId? }`
+- `ai:error` → `{ chatId, code?, message, details?, requestId? }`
+- `presence:update` → `{ chatId, onlineUserIds: Array<string|number> }`
 
-## Client → Server
+**Client → Server**
 
-```ts
-"chat:join": { chatId: ChatID; userId?: UserID };
-"user:message": { chatId: ChatID; messageId: string; userId: UserID; text: string };
-"user:typingStart": { chatId: ChatID; userId: UserID; traceId?: string };
-"user:typingStop": { chatId: ChatID; userId: UserID; traceId?: string };
-"ai:abort": { chatId: ChatID; reason?: string };
-"chat:read": { chatId: ChatID; userId: UserID; messageIds: string[]; readAt: string };
-```
+- `user:message` → `{ chatId, messageId, userId, text, parts?, requestId? }`
+- `user:typingStart` / `user:typingStop` → `{ chatId, userId }`
+- `ai:abort` → `{ chatId, reason? }`
+- `chat:read` → `{ chatId, userId, messageIds, readAt }`
 
-## Server → Client
-
-```ts
-"presence:update": { chatId: ChatID; onlineUserIds: UserID[] };
-"chat:message": { chatId: ChatID; messageId: string; userId: UserID; text: string; createdAt: string };
-"ai:processing": { chatId: ChatID; status: "queued" | "working" | "retrying"; etaMs?: number };
-"ai:token": { chatId: ChatID; token: string; index: number; done?: false };
-"ai:message": { chatId: ChatID; messageId: string; role: "assistant"; text: string; createdAt: string };
-"ai:error": { chatId: ChatID; code?: string; message: string; details?: unknown };
-
-// optional: tools
-"ai:tool_call": { chatId: ChatID; callId: string; toolName: string; args: unknown };
-"ai:tool_result": { chatId: ChatID; callId: string; toolName: string; result: unknown };
-```
-
-> Treat this file as the contract. When you add or change an event, update both backend and frontend together.
+> **requestId** is critical for correlating a user turn to the token/final events.

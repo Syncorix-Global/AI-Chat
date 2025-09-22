@@ -1,132 +1,209 @@
 # Syncorix AI Chat SDK
 
-Typed realtime chat + typing UX for AI chat applications.  
-This package provides a **Socket.IO client wrapper** and **typing observer** with strong TypeScript contracts, plus a playground and mock server for development.
+Type‑safe, frontend‑first utilities for building **real‑time AI chat UIs**:
+- **Socket layer**: a typed Socket.IO client wrapper that streams tokens, presence, and status.
+- **Orchestration**: a small **Chat SDK** that wires your socket to a conversation graph and emits friendly UI events.
+- **Typing UX**: a lightweight `TypingObserver` for focus/typing/pause/stop (IME‑aware).
+
+> Works in the browser. Bring any Socket.IO backend that speaks your `ChatEvents` contract.
 
 ---
 
-## ✨ Features
-
-- **Typed Socket Layer**
-  - `ChatEvents` → single source of truth for events
-  - `SocketService` → low-level Socket.IO wrapper with full typing
-  - `AIChatSocket` → high-level client with callbacks & helpers
-- **Typing Layer**
-  - `TypingObserver` → focus + typing detection (with IME support)
-- **Playground**
-  - React + Vite demo UI
-  - Mock Socket.IO server simulating AI lifecycle events
-
----
-
-## 📦 Installation
+## 📦 Install
 
 ```bash
-pnpm i @syncorix/AI Chat SDK
+# pick one
+pnpm add @syncorix/ai-chat-sdk
+npm  i   @syncorix/ai-chat-sdk
+yarn add @syncorix/ai-chat-sdk
 ```
+
+**Requirements**
+- Node 18+ (for tooling). Your app runs in the browser.
+- A Socket.IO server that emits events compatible with your `ChatEvents` types.
 
 ---
 
-## 🚀 Quickstart (Integrator Guide)
+## 🚀 5‑Minute Quickstart
 
-### 1. Connect to a Chat
+This is the **simplest path**: create the socket, create the SDK, listen to events, and send a message.
 
 ```ts
-import { AIChatSocket } from "@sockets/AIChatSockets";
-import type { ChatID } from "@sockets/ChatEvents";
+import { ChatSDK, AIChatSocket } from "@syncorix/ai-chat-sdk";
 
-const chat = new AIChatSocket({
-  url: "https://realtime.example.com",
-  chatId: "room-1" as ChatID,
-  ioOptions: { transports: ["websocket"], auth: { token: "JWT" } },
-  callbacks: {
-    onConnect: () => console.log("connected"),
-    onAIMessage: (e) => console.log("assistant:", e.text),
-    onChatMessage: (e) => console.log("user:", e.text),
-    onAIError: (e) => console.error("ai error:", e.message)
-  }
+// 1) Your socket client (connects to your Socket.IO backend)
+const socket = new AIChatSocket({
+  url: import.meta.env.VITE_SOCKET_URL, // e.g. "http://localhost:4000"
+  chatId: "room-1",
+  autoConnect: true,
 });
-```
 
-### 2. Send a Message
-
-```ts
-chat.sendMessage({
-  messageId: crypto.randomUUID(),
-  userId: "user-1",
-  text: "Hello!"
+// 2) High-level SDK that wires socket → conversation graph → UI events
+const sdk = new ChatSDK({
+  socket,
+  chatId: "room-1",
+  userId: "user-123",
+  typing: { target: "#message", autoEmit: true }, // optional: emits typingStart/typingStop
 });
-```
 
-### 3. Typing Indicators
-
-```ts
-chat.typingStart("user-1");
-chat.typingStop("user-1");
-```
-
-### 4. Abort or Mark Read
-
-```ts
-chat.abort("user canceled");
-
-chat.markRead({
-  userId: "user-1",
-  messageIds: ["m1", "m2"],
-  readAt: new Date().toISOString()
+// 3) Subscribe to key events for your UI
+sdk.on("conversation:update", ({ conversation }) => {
+  // Render bubbles from conversation.nodes (USER → SYSTEM pairs via conversation.paths)
 });
+sdk.on("status:change", ({ to }) => {
+  // to = "queued" | "running" | "done" | "error" → show spinners/progress
+});
+sdk.on("ai:token", ({ cumulative }) => {
+  // streaming text for the current assistant message
+});
+sdk.on("system:update", ({ message, options }) => {
+  // assistant bubble (final or mid‑stream); render optional quick‑reply options[] if provided
+});
+sdk.on("error", ({ error }) => console.warn(error));
+
+// 4) Send a user message
+sdk.sendText("Hello!");
+
+// (Optional) Abort the current assistant turn
+sdk.abort("user canceled");
+
+// (Optional) Mark messages as read
+sdk.markRead(["msg-1", "msg-2"]);
 ```
 
----
-
-# Syncorix AI Chat SDK
-
-Type-safe Socket.IO SDK for building real-time AI chat UIs in the browser  
-(streaming tokens, typing indicators, presence, reconnects).
+**React tip:** Put `sdk` in a context or a store (e.g., Zustand/Redux), and update your UI from `conversation:update` / `system:update` events.
 
 ---
 
-📖 **Documentation:** [https://docs.syncorixglobal.ai](https://docs.syncorixglobal.ai)
+## 🧠 Prompt composition & moderation (frontend‑controlled)
 
----
-
-## Development
-
-```bash
-pnpm i
-pnpm dev:all      # runs mock-server (4000) + playground (5173)
-pnpm docs:dev     # run docs locally
-
-## 🧩 Typing Observer
-
-Detect when a user is typing, pausing, or stopping.
+You control what gets sent. Build your prompt locally (system/guard/user), optionally moderate it, then call `sdk.sendText()`.
 
 ```ts
-import { observeTyping, TypingObserverEvent } from "@syncorix/AI Chat SDK/typing";
+function composePrompt(userText: string) {
+  const system = "You are a helpful assistant.";
+  const guard  = "Avoid PII.";
+  // final string the model will see
+  const composed = [system, guard, userText].join("\n\n");
+  return composed;
+}
 
-const ob = observeTyping("#message", { pauseDelay: 700, stopDelay: 1400 });
+async function onSend(userText: string) {
+  const composed = composePrompt(userText);
+  // optional: run your own moderation pipeline here
+  // if blocked → show UI and return
+  await sdk.sendText(composed);
+}
+```
+
+The SDK will optimistically append a USER node, open the paired SYSTEM node, and stream tokens/status as events arrive from your server.
+
+---
+
+## ✍️ Typing Observer (standalone or via SDK)
+
+Observe typing/focus with IME support.
+
+```ts
+import { TypingObserver, TypingObserverEvent } from "@syncorix/ai-chat-sdk/typing-observer";
+
+const ob = new TypingObserver("#message", { pauseDelay: 700, stopDelay: 1500 });
 
 ob.on(TypingObserverEvent.TypingStart, () => console.log("start"));
-ob.on(TypingObserverEvent.Typing, (e) => console.log("value=", e.value));
+ob.on(TypingObserverEvent.Typing,      (e) => console.log("value:", e.value));
 ob.on(TypingObserverEvent.TypingPause, () => console.log("pause"));
-ob.on(TypingObserverEvent.TypingStop, () => console.log("stop"));
+ob.on(TypingObserverEvent.TypingStop,  () => console.log("stop"));
+```
+
+> When you pass `typing: { target, autoEmit: true }` to `ChatSDK`, it will automatically call `socket.typingStart/typingStop` and emit a unified `typing` event for your UI.
+
+---
+
+## 🧱 Rebuild history (hydrate from a saved shape)
+
+If you persist a simple array of rows, you can rebuild the conversation graph on load:
+
+```ts
+import { rebuildConversationFromShape } from "@syncorix/ai-chat-sdk";
+
+type Msg = { message: string; options?: string[]; timestamp?: number };
+type Row = { user?: Msg; system?: Msg; status?: "queued"|"running"|"done"|"error" };
+
+const rows: Row[] = JSON.parse(localStorage.getItem("chat-shape") || "[]");
+const convo = rebuildConversationFromShape(rows);
+```
+
+Use `convo.nodes` and `convo.paths` to render. New traffic from the SDK continues on top of the rebuilt graph.
+
+---
+
+## 📚 Essential API (what you’ll actually use)
+
+### Exports (package root)
+```ts
+import {
+  ChatSDK,                // orchestrates socket → conversation → UI events
+  AIChatSocket,           // typed Socket.IO client wrapper
+  TypingObserver,         // typing/focus observer (also available via subpath)
+  TypingObserverEvent,
+  rebuildConversationFromShape, // hydrate from a simple shape
+  Conversation,           // low-level graph (optional direct use)
+} from "@syncorix/ai-chat-sdk";
+```
+
+### `new ChatSDK(options)`
+```ts
+type ChatSDKOptions = {
+  socket: AIChatSocket;
+  chatId: string | number;
+  userId: string | number;
+  typing?: { target: HTMLElement | string; options?: { pauseDelay?: number; stopDelay?: number; trackSelection?: boolean }; autoEmit?: boolean };
+  mapStatus?: (serverStatus: any) => "queued" | "running" | "done" | "error"; // optional mapper
+};
+```
+**Common methods**
+- `sendText(text: string, extra?)` → creates a USER→SYSTEM pair, sends to server.
+- `abort(reason?)` → asks server to stop the current assistant turn.
+- `markRead(messageIds: string[], readAtISO?)` → acknowledge message reads.
+- `on(event, handler)` / `off(event, handler)` → subscribe/unsubscribe.
+
+**Events you’ll likely handle**
+- `conversation:update` → render from `conversation`.
+- `status:change`       → `"queued" | "running" | "done" | "error"`.
+- `ai:token`            → `{ token, index, cumulative }` for streaming.
+- `system:update`       → `{ message, options? }` for the assistant bubble.
+- `ai:message`          → final assistant message (with optional usage).
+- `typing`              → `{ kind: "start"|"tick"|"pause"|"stop" }`.
+- `error`               → any surfaced error object.
+
+### Socket client (if you use it directly)
+```ts
+const socket = new AIChatSocket({
+  url: "http://localhost:4000",
+  chatId: "room-1",
+  autoConnect: true,
+  callbacks: {
+    onAIMessage: (e) => console.log(e.text),
+    onAIToken:   (e) => console.log(e.token),
+  },
+});
+socket.sendMessage({ messageId: crypto.randomUUID(), userId: "user-1", text: "Hello" });
 ```
 
 ---
 
-## 🎨 Playground & Mock Server
+## 🧪 Playground & Mock Server (optional)
 
-Run a local mock server and playground UI for testing.
+We ship a small Vite playground and a mock Socket.IO server to help you try the SDK end‑to‑end while you integrate your own backend.
 
 ```bash
-pnpm dev:all
+pnpm dev:all          # runs mock server (4000) + playground (5173)
+# or start just one
+pnpm mock:dev
+pnpm playground:dev
 ```
 
-- Playground → [http://localhost:5173](http://localhost:5173)
-- Mock server → [http://localhost:4000](http://localhost:4000)
-
-Configure `playground/.env`:
-
+Create `playground/.env`:
 ```ini
 VITE_SOCKET_URL=http://localhost:4000
 VITE_CHAT_ID=room-1
@@ -135,94 +212,36 @@ VITE_USER_ID=user-123
 
 ---
 
-## 🤝 Contributing
+## ❓ Troubleshooting
 
-See [CONTRIBUTING.md](./CONTRIBUTING.md) for full details.
-
-## 📦 Release
-
-This package publishes to **npm** via a GitHub Actions workflow that runs on **tags** like `v0.1.1`.  
-The workflow installs deps, runs tests, builds, publishes to npm **with provenance**, and then creates a GitHub Release.
-
-### One-time setup
-
-- In your GitHub repo, add a secret: **`NPM_TOKEN`** (npm → Access Tokens → Automation).
-- Ensure your `package.json` has:
-  ```json
-  {
-    "name": "@syncorix/ai-chat-sdk",
-    "publishConfig": { "access": "public", "registry": "https://registry.npmjs.org" },
-    "packageManager": "pnpm@9.15.9",
-    "engines": { "node": ">=18" }
-  }
-  ```
-- The workflow file lives at: `.github/workflows/release.yml`.
-
-### Tag-based release (recommended)
-
-1. Bump the version locally (updates `package.json` and creates a git tag):
-   ```bash
-   # choose one:
-   pnpm version patch     # 0.1.0 -> 0.1.1
-   pnpm version minor     # 0.1.x -> 0.2.0
-   pnpm version major     # x.y.z -> (x+1).0.0
-   # or set an exact version:
-   pnpm version 0.1.1
-   ```
-
-2. Push the commit and tag:
-   ```bash
-   git push
-   git push --tags
-   ```
-
-3. The **Release (npm)** workflow runs automatically.  
-   When it finishes, your new version is on npm and a GitHub Release is created.
-
-### Manual release (optional)
-
-- Actions → **Release (npm)** → **Run workflow**.  
-- (Optional) provide a `version` input like `patch`, `minor`, `major`, or `0.1.1` to bump `package.json` before publish.
-- The job will **test**, **build**, and **publish** the current HEAD.
-
-### What the workflow enforces
-
-- Uses Node **21.7.3** (configurable).
-- Uses pnpm version from `package.json`’s `packageManager` (no duplicate version pin in the action).
-- Verifies the pushed tag matches `package.json` (e.g., tag `v0.1.1` must equal `"version": "0.1.1"`).
-- Publishes with:
-  ```bash
-  npm publish --provenance --access public
-  ```
-  (requires `id-token: write` permission and the `NPM_TOKEN` secret)
-
-### Troubleshooting
-
-- **Tag mismatch**: “Tag does not match package.json version”
-  ```bash
-  git tag -d vBAD && git push origin :refs/tags/vBAD
-  pnpm version 0.1.1
-  git push && git push --tags
-  ```
-- **pnpm version conflict**: Do **not** set `with: version:` in `pnpm/action-setup@v4` if you already pin pnpm via `package.json`’s `packageManager`.
-- **2FA account**: Use an **Automation** token on npm; classic 2FA tokens won’t work for CI publishes.
-
-### Release checklist
-
-- [ ] All tests pass locally: `pnpm test`
-- [ ] Build succeeds: `pnpm build`
-- [ ] Changelog/README updated if needed
-- [ ] Version bumped and tag pushed (`vX.Y.Z`)
-
-
-### Highlights
-
-- **Type-first** → All events defined in `ChatEvents.ts` (update both client & server).
-- **Granular layers** → Low-level (`SocketService`), high-level (`AIChatSocket`).
-- **Docs** → Keep `docs/` updated when adding features.
+- **Nothing streams**: Check your server emits `ai:processing`, `ai:token`, and `ai:message` (matching your `ChatEvents`). Confirm CORS and Socket.IO path.
+- **Can’t connect**: Verify `VITE_SOCKET_URL`, and that transports include `websocket` on both sides if you disabled polling.
+- **Types missing**: Ensure your bundler resolves package exports; Vite/TS works out of the box. If using path aliases, avoid shadowing `@syncorix/ai-chat-sdk`.
+- **SSR**: Instantiate the SDK/socket **in the browser** (e.g., inside a `useEffect` in Next.js).
 
 ---
 
 ## 📄 License
 
-MIT
+MIT © Syncorix Global
+
+---
+
+## 🛠️ Contributing / Releases (repo meta)
+
+- Dev scripts:
+  ```bash
+  pnpm i
+  pnpm test
+  pnpm build
+  pnpm dev:all
+  ```
+- Tag‑based release to npm + GitHub Release (requires `NPM_TOKEN`):
+  ```bash
+  pnpm version patch|minor|major
+  git push && git push --tags
+  ```
+- Docs live in `docs/` (VitePress): `pnpm docs:dev`
+
+**Repository**: https://github.com/Syncorix-Global/AI-Chat  
+**Docs**: https://docs.syncorixglobal.ai
