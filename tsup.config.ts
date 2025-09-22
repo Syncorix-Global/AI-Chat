@@ -6,7 +6,9 @@ export default defineConfig({
     index: "src/index.ts",
     // Subpath export: @syncorix/consultation/typing-observer
     "typing-observer": "src/interactions/typingObserver/TypingObserver.ts",
-    "sockets": "src/sockets/index.ts"
+    "sockets": "src/sockets/index.ts",
+    "models": "src/models/index.ts",
+    "sdk": "src/sdk/index.ts"
   },
   format: ["esm", "cjs"],
   dts: true,

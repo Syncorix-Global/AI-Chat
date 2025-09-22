@@ -1,14 +1,14 @@
 ---
 title: Socket Overview
-description: The typed socket stack at a glance
+outline: deep
 ---
 
 # Socket Overview
 
-The socket layer is split into three parts:
+Use `AIChatSocket` for a **typed** Socket.IO client with callbacks for:
 
-1. **ChatEvents** — a single TypeScript interface that defines every client ⇄ server event and payload. Keep this shared on both sides.
-2. **SocketService** — a generic, low-level, strongly typed Socket.IO client wrapper for full control (connect, emit, on, lifecycle).
-3. **AIChatSocket** — a batteries-included high-level client with callbacks and helper methods (send, typing, abort, read receipts).
+- `chat:message`, `presence:update`
+- `ai:processing`, `ai:token`, `ai:message`, `ai:error`
+- `ai:tool_call`, `ai:tool_result` (optional)
 
-Use **AIChatSocket** for quick integration. Drop down to **SocketService** when you need advanced behavior or custom events.
+Most apps won’t use it directly—prefer the **Chat SDK** which wires it to the graph and normalizes events.

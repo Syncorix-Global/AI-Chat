@@ -1,11 +1,15 @@
 ---
-title: Typing
-description: Entry for Typing docs
+title: Typing (entry)
+outline: deep
 ---
 
-# Typing
+# Typing (entry)
 
-This section covers the TypingObserver.
+Shorthand:
 
-- 👉 Start with the [Typing Overview](/typing/overview)
-- Then see the full [TypingObserver API](/typing/typing-observer)
+```ts
+import { observeTyping, TypingObserverEvent } from "@syncorix/ai-chat-sdk/typing-observer";
+
+const ob = observeTyping("#message"); // same options as TypingObserver
+ob.on(TypingObserverEvent.TypingStart, () => {/* ... */});
+```
