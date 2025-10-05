@@ -1,6 +1,6 @@
 {
   "name": "@syncorix/ai-chat-sdk",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Type-safe Socket.IO SDK for building real-time AI chat UIs in the browser (streaming tokens, typing indicators, presence, reconnects).",
   "repository": {
     "type": "git",
@@ -28,7 +28,9 @@
     },
     "./package.json": "./package.json"
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "packageManager": "pnpm@9.15.9",
   "sideEffects": false,
   "scripts": {
@@ -54,7 +56,11 @@
     "node": ">=18"
   },
   "license": "MIT",
-  "keywords": ["vite", "library", "typescript"],
+  "keywords": [
+    "vite",
+    "library",
+    "typescript"
+  ],
   "devDependencies": {
     "@commitlint/cli": "^19.8.1",
     "@commitlint/config-conventional": "^19.8.1",
@@ -82,7 +88,9 @@
     "react": "^18 || ^19"
   },
   "peerDependenciesMeta": {
-    "react": { "optional": true }
+    "react": {
+      "optional": true
+    }
   },
   "dependencies": {
     "socket.io-client": "^4.8.1"
