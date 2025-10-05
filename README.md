@@ -5,7 +5,8 @@ Type‑safe, frontend‑first utilities for building **real‑time AI chat UIs**
 - **Orchestration**: a small **Chat SDK** that wires your socket to a conversation graph and emits friendly UI events.
 - **Typing UX**: a lightweight `TypingObserver` for focus/typing/pause/stop (IME‑aware).
 
-> Works in the browser. Bring any Socket.IO backend that speaks your `ChatEvents` contract.
+> Works in the browser. Bring any Socket.IO backend that speaks your `ChatEvents` contract.  
+> **New:** Dynamic **event-name remapping**, wildcard subscriptions, and optional **topic discovery** so the client can adapt to any backend naming scheme without code changes.
 
 ---
 
@@ -20,7 +21,7 @@ yarn add @syncorix/ai-chat-sdk
 
 **Requirements**
 - Node 18+ (for tooling). Your app runs in the browser.
-- A Socket.IO server that emits events compatible with your `ChatEvents` types.
+- A Socket.IO server that emits events compatible with your `ChatEvents` types (or provide a mapping; see below).
 
 ---
 
@@ -72,6 +73,41 @@ sdk.markRead(["msg-1", "msg-2"]);
 ```
 
 **React tip:** Put `sdk` in a context or a store (e.g., Zustand/Redux), and update your UI from `conversation:update` / `system:update` events.
+
+---
+
+## 🔁 Dynamic event-name remapping (new)
+
+Your backend doesn’t need to use our default topic names. Remap them per app or per tenant:
+
+```ts
+const socket = new AIChatSocket({
+  url: import.meta.env.VITE_SOCKET_URL,
+  chatId: "room-1",
+  eventNames: {
+    JOIN: "room:enter",
+    USER_MESSAGE: "chat/user_message",
+    AI_TOKEN: "llm:delta",
+    AI_MESSAGE: "llm:final",
+  },
+  // or compute dynamically:
+  // eventResolver: (key, def) => tenantTopicMap[key] ?? def,
+});
+```
+
+Extras:
+- **Wildcard tap:** `socket.onAny((event, ...args) => { /* debug/telemetry */ })`
+- **Raw hooks:** `socket.emitRaw(name, payload)`, `socket.onRaw(name, cb)`, `socket.offRaw(name, cb)`
+- **Discovery (optional):** have the server advertise topics after connect:
+  ```ts
+  const s = new AIChatSocket({
+    url: import.meta.env.VITE_SOCKET_URL,
+    chatId: "room-1",
+    discoverEvents: true,
+    discoveryRequestEvent: "meta:events:request",
+    discoveryResponseEvent: "meta:events:response",
+  });
+  ```
 
 ---
 
@@ -143,7 +179,7 @@ Use `convo.nodes` and `convo.paths` to render. New traffic from the SDK continue
 ```ts
 import {
   ChatSDK,                // orchestrates socket → conversation → UI events
-  AIChatSocket,           // typed Socket.IO client wrapper
+  AIChatSocket,           // typed Socket.IO client wrapper (with dynamic topics)
   TypingObserver,         // typing/focus observer (also available via subpath)
   TypingObserverEvent,
   rebuildConversationFromShape, // hydrate from a simple shape
@@ -182,6 +218,7 @@ const socket = new AIChatSocket({
   url: "http://localhost:4000",
   chatId: "room-1",
   autoConnect: true,
+  eventNames: { AI_MESSAGE: "llm:final" }, // example remap
   callbacks: {
     onAIMessage: (e) => console.log(e.text),
     onAIToken:   (e) => console.log(e.token),
@@ -214,7 +251,7 @@ VITE_USER_ID=user-123
 
 ## ❓ Troubleshooting
 
-- **Nothing streams**: Check your server emits `ai:processing`, `ai:token`, and `ai:message` (matching your `ChatEvents`). Confirm CORS and Socket.IO path.
+- **Nothing streams**: If you’re using custom topic names, either provide an `eventNames` map or enable discovery so the client knows what to listen to. Also check CORS and transports.
 - **Can’t connect**: Verify `VITE_SOCKET_URL`, and that transports include `websocket` on both sides if you disabled polling.
 - **Types missing**: Ensure your bundler resolves package exports; Vite/TS works out of the box. If using path aliases, avoid shadowing `@syncorix/ai-chat-sdk`.
 - **SSR**: Instantiate the SDK/socket **in the browser** (e.g., inside a `useEffect` in Next.js).
