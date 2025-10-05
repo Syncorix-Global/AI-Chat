@@ -28,3 +28,27 @@ const chat = new AIChatSocket({
 - `markRead({ userId, messageIds, readAt })`
 
 Prefer using this through the **Chat SDK** which handles the conversation graph, correlation, and UI events.
+
+## Dynamic topics (new)
+
+Remap the default names to match your backend without changing server code:
+
+```ts
+const chat = new AIChatSocket({
+  url: "http://localhost:4000",
+  chatId: "room-1",
+  eventNames: {
+    JOIN: "room:enter",
+    USER_MESSAGE: "chat/user_message",
+    AI_TOKEN: "llm:delta",
+    AI_MESSAGE: "llm:final",
+  },
+  // Or compute:
+  // eventResolver: (key, def) => tenantMap[key] ?? def,
+});
+```
+
+**Extras**
+- `onAny((event, ...args) => void)` — observe all topics (debug/telemetry)
+- `emitRaw(name, payload)` / `onRaw(name, cb)` / `offRaw(name, cb)` — escape hatches
+- Discovery (optional): `discoverEvents`, `discoveryRequestEvent`, `discoveryResponseEvent`

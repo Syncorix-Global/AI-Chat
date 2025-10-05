@@ -16,7 +16,7 @@ pnpm add @syncorix/ai-chat-sdk
 
 Requirements:
 - Node **18+** for tooling.
-- A Socket.IO backend that emits events matching your `ChatEvents` schema.
+- A Socket.IO backend that emits events matching your `ChatEvents` schema (or provide a mapping).
 
 ## Minimal integration
 
@@ -28,6 +28,8 @@ const socket = new AIChatSocket({
   url: import.meta.env.VITE_SOCKET_URL, // e.g., http://localhost:4000
   chatId: "room-1",
   autoConnect: true,
+  // NEW: remap topics if your server uses different names
+  // eventNames: { JOIN: "room:enter", AI_MESSAGE: "llm:final" },
 });
 
 // 2) High-level SDK that wires socket → conversation graph → UI events
@@ -70,6 +72,30 @@ import { rebuildConversationFromShape } from "@syncorix/ai-chat-sdk";
 // later, from localStorage/db
 const rows = JSON.parse(localStorage.getItem("shape") || "[]");
 const conversation = rebuildConversationFromShape(rows);
+```
+
+### Dynamic topics (optional)
+
+If your backend uses different event names, either pass a map:
+
+```ts
+const socket = new AIChatSocket({
+  url: import.meta.env.VITE_SOCKET_URL,
+  chatId: "room-1",
+  eventNames: { AI_TOKEN: "llm:delta", AI_MESSAGE: "llm:final" },
+});
+```
+
+…or enable discovery so the server tells the client what to use:
+
+```ts
+const socket = new AIChatSocket({
+  url: import.meta.env.VITE_SOCKET_URL,
+  chatId: "room-1",
+  discoverEvents: true,
+  discoveryRequestEvent: "meta:events:request",
+  discoveryResponseEvent: "meta:events:response",
+});
 ```
 
 That’s it. Next, learn the **layers** and how to extend the SDK.

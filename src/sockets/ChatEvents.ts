@@ -2,7 +2,7 @@
  * ChatEvents.ts
  * ------------------------------------------------------------
  * Typed event map for AI chat + human chat, covering:
- * - user -> server: send message, typing start/stop, abort
+ * - client -> server: send message, typing start/stop, abort
  * - server -> client: ai processing status, token stream, final message, errors, tool calls
  * - common: presence, read receipts, plain chat messages
  */

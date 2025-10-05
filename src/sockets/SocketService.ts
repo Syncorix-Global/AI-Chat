@@ -1,16 +1,15 @@
-// SocketService.ts
 import { io, type Socket, type ManagerOptions, type SocketOptions } from "socket.io-client";
 
 /** Any object with named events -> payload types */
-export type EventMapLike = object;
+export type EventMapLike = Record<string, any>;
 
-/** Typed listener for a given payload. */
-export type Listener<Payload> = (payload: Payload) => void;
+/** Typed/loose listener for a given payload. */
+export type Listener<Payload = any> = (payload: Payload) => void;
 
-/** Optional per-event handler map for auto-registration. */
-export type HandlerMap<E extends EventMapLike> = Partial<{
-  [K in keyof E]: Listener<E[K]>;
-}>;
+/** Optional per-event handler map for auto-registration (allows custom strings). */
+export type HandlerMap<E extends EventMapLike> = Partial<
+  Record<keyof E | string, Listener<any>>
+>;
 
 /** Options for constructing the service. */
 export interface SocketServiceOptions<E extends EventMapLike> {
@@ -34,7 +33,7 @@ export interface SocketServiceOptions<E extends EventMapLike> {
 }
 
 /**
- * Reusable, strongly-typed Socket.IO service.
+ * Reusable Socket.IO service with dynamic event support.
  */
 export class SocketService<E extends EventMapLike> {
   private socket!: Socket;
@@ -46,6 +45,7 @@ export class SocketService<E extends EventMapLike> {
   private connected = false;
 
   private registeredHandlers: Array<{ event: keyof E | string; listener: (...args: any[]) => void }> = [];
+  private anyListeners: Array<(event: string, ...args: any[]) => void> = [];
 
   constructor(options: SocketServiceOptions<E>) {
     this.url = options.url;
@@ -81,15 +81,21 @@ export class SocketService<E extends EventMapLike> {
     });
 
     this.socket.on(this.serverErrorEvent, (err: unknown) => {
-       
       console.error("[SocketService] Server error:", err);
     });
 
+    // Wire onAny for wildcard hooks (guard if client/mocks don't support it)
+    const s: any = this.socket as any;
+    if (typeof s.onAny === "function") {
+      s.onAny((event: string, ...args: any[]) => {
+        for (const l of this.anyListeners) l(event, ...args);
+      });
+    }
+
     if (initialHandlers) {
-      (Object.entries(initialHandlers) as Array<[keyof E, Listener<any>]>) // typed cast
-        .forEach(([event, listener]) => {
-          if (listener) this.on(event, listener as any);
-        });
+      Object.entries(initialHandlers).forEach(([event, listener]) => {
+        if (listener) this.on(event, listener as any);
+      });
     }
   }
 
@@ -100,6 +106,7 @@ export class SocketService<E extends EventMapLike> {
       this.socket.off(event as string, listener);
     });
     this.registeredHandlers = [];
+    this.anyListeners = [];
     this.socket.disconnect();
     this.connected = false;
   }
@@ -112,24 +119,44 @@ export class SocketService<E extends EventMapLike> {
     return !!this.socket && this.socket.connected;
   }
 
-  /** Subscribe to a typed event; returns an unsubscribe function. */
-  on<K extends keyof E>(event: K, listener: Listener<E[K]>): () => void {
+  /** Subscribe to a (possibly dynamic) event; returns an unsubscribe function. */
+  on(event: keyof E | string, listener: Listener<any>): () => void {
     this.socket.on(event as string, listener as any);
     this.registeredHandlers.push({ event, listener });
     return () => this.off(event, listener);
   }
 
   /** Remove a previously registered listener. */
-  off<K extends keyof E>(event: K, listener: Listener<E[K]>): void {
+  off(event: keyof E | string, listener: Listener<any>): void {
     this.socket.off(event as string, listener as any);
     this.registeredHandlers = this.registeredHandlers.filter(
       (l) => !(l.event === event && l.listener === listener)
     );
   }
 
-  /** Emit a typed event to the server (optionally with an ack). */
-  emit<K extends keyof E>(event: K, payload: E[K], ack?: (response: unknown) => void): void {
+  /** Wildcard subscription to observe all events. */
+  onAny(listener: (event: string, ...args: any[]) => void): () => void {
+    this.anyListeners.push(listener);
+    return () => {
+      this.anyListeners = this.anyListeners.filter((l) => l !== listener);
+    };
+  }
+
+  /** Emit a (possibly dynamic) event to the server (optionally with an ack). */
+  emit(event: keyof E | string, payload?: any, ack?: (response: unknown) => void): void {
     if (ack) this.socket.emit(event as string, payload, ack);
     else this.socket.emit(event as string, payload);
+  }
+
+  /** Low-level connect hook (used by AIChatSocket & tests) */
+  onConnect(listener: () => void): () => void {
+    this.socket.on("connect", listener);
+    return () => this.socket.off("connect", listener);
+  }
+
+  /** Low-level disconnect hook (symmetry + tests) */
+  onDisconnect(listener: () => void): () => void {
+    this.socket.on("disconnect", listener);
+    return () => this.socket.off("disconnect", listener);
   }
 }

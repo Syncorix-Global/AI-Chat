@@ -12,5 +12,6 @@ A light wrapper around `socket.io-client` that adds typing and convenience:
 - `connect()` / `disconnect()`
 - `isConnected()`
 - automatic room join: emit `{ chatId }` on `joinEvent` (default `"chat:join"`)
+- (new) optional wildcard subscription via the higher-level `AIChatSocket.onAny()`
 
 Most apps don’t need this directly—use `AIChatSocket` or the **Chat SDK**.
