@@ -33,3 +33,11 @@ The SDK is made of **small, composable layers**:
 - **requestId correlation**: when sending, the SDK includes a `requestId` so tokens/final messages map to the right pair.
 - **Status mapping**: map server statuses (`queued/working/retrying`) to a stable UI status set (`queued/running/done/error`).
 - **Graph model**: `Conversation` tracks `Node`s (USER or SYSTEM) and `Path`s (links with process/steps). Perfect for rendering and metrics.
+
+
+**What changed in the socket layer (additive)**
+
+- **Arbitrary connect params** via `ioOptions.query`/`ioOptions.auth`.
+- **Optional/no-room join** with `joinEvent: null` or a custom `joinPayload`.
+- **Per-emit meta** (`AIChatSocketOptions.meta`) merged into client→server emits.
+- **Dynamic topics & discovery** remain as before.

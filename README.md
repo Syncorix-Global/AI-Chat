@@ -6,7 +6,7 @@ Type‑safe, frontend‑first utilities for building **real‑time AI chat UIs**
 - **Typing UX**: a lightweight `TypingObserver` for focus/typing/pause/stop (IME‑aware).
 
 > Works in the browser. Bring any Socket.IO backend that speaks your `ChatEvents` contract.  
-> **New:** Dynamic **event-name remapping**, wildcard subscriptions, and optional **topic discovery** so the client can adapt to any backend naming scheme without code changes.
+> **New:** Dynamic **event-name remapping**, wildcard subscriptions, optional **topic discovery**, **arbitrary connect params**, **optional/no-room joins**, and per‑emit **meta** stamping — adapt to any backend naming scheme without code changes.
 
 ---
 
@@ -22,6 +22,7 @@ yarn add @syncorix/ai-chat-sdk
 **Requirements**
 - Node 18+ (for tooling). Your app runs in the browser.
 - A Socket.IO server that emits events compatible with your `ChatEvents` types (or provide a mapping; see below).
+- **Note:** If your backend does **not** use rooms, `chatId` is optional and you can skip joins (`joinEvent: null`).
 
 ---
 
@@ -35,7 +36,7 @@ import { ChatSDK, AIChatSocket } from "@syncorix/ai-chat-sdk";
 // 1) Your socket client (connects to your Socket.IO backend)
 const socket = new AIChatSocket({
   url: import.meta.env.VITE_SOCKET_URL, // e.g. "http://localhost:4000"
-  chatId: "room-1",
+  chatId: "room-1",                     // keep if your server uses rooms
   autoConnect: true,
 });
 
@@ -70,6 +71,22 @@ sdk.abort("user canceled");
 
 // (Optional) Mark messages as read
 sdk.markRead(["msg-1", "msg-2"]);
+```
+
+**No‑room backend variant (new):**
+```ts
+const socket = new AIChatSocket({
+  url: import.meta.env.VITE_SOCKET_URL,
+  // Pass arbitrary connect params (any names) via query/auth
+  ioOptions: {
+    transports: ["websocket"],
+    query: { consultationId: "abc-123", tenant: "acme" },
+    // or: auth: { token: "..." }
+  },
+  joinEvent: null,                         // ← skip room join entirely
+  meta: { consultationId: "abc-123" },     // ← merged into ALL client→server emits
+});
+const sdk = new ChatSDK({ socket, chatId: "ui-thread-1", userId: "user-123" });
 ```
 
 **React tip:** Put `sdk` in a context or a store (e.g., Zustand/Redux), and update your UI from `conversation:update` / `system:update` events.
@@ -108,6 +125,30 @@ Extras:
     discoveryResponseEvent: "meta:events:response",
   });
   ```
+
+---
+
+## 🔓 Arbitrary connect params & no‑room servers (new)
+
+If your backend expects **custom connect params** (e.g., `consultationId`) or **doesn’t use rooms**, you don’t need to change your server:
+
+```ts
+const chat = new AIChatSocket({
+  url: "https://your-socket-host",
+  ioOptions: {
+    transports: ["websocket"],
+    query: { consultationId: sessionId }, // any arbitrary key/value
+    // or: auth: { token }
+  },
+  joinEvent: null, // skip emitting a join event entirely (no rooms)
+  meta: { consultationId: sessionId }, // merged into every client→server emit
+});
+
+// You can also listen to raw backend topics without remapping:
+const off = chat.onRaw("consultation-result", (data) => { /* handle */ });
+// later: off();
+```
+
 
 ---
 
@@ -252,6 +293,7 @@ VITE_USER_ID=user-123
 ## ❓ Troubleshooting
 
 - **Nothing streams**: If you’re using custom topic names, either provide an `eventNames` map or enable discovery so the client knows what to listen to. Also check CORS and transports.
+- **No rooms**: Set `joinEvent: null` and omit `chatId`; pass required params via `ioOptions.query`/`auth`, and (optionally) set `meta` to stamp all emits.
 - **Can’t connect**: Verify `VITE_SOCKET_URL`, and that transports include `websocket` on both sides if you disabled polling.
 - **Types missing**: Ensure your bundler resolves package exports; Vite/TS works out of the box. If using path aliases, avoid shadowing `@syncorix/ai-chat-sdk`.
 - **SSR**: Instantiate the SDK/socket **in the browser** (e.g., inside a `useEffect` in Next.js).

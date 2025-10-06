@@ -26,3 +26,8 @@ Your backend can emit the defaults below **or** advertise/rename them via mappin
 > **requestId** is critical for correlating a user turn to the token/final events.
 
 **Remapping**: If your server uses e.g. `llm:final` for `ai:message`, set `eventNames: { AI_MESSAGE: "llm:final" }` or provide an `eventResolver`.
+
+## Updates (additive)
+
+- `chatId` is **optional** when your backend doesn’t use rooms.
+- Any `meta` provided in `AIChatSocketOptions.meta` is **automatically merged** into client→server emits (`user:message`, `user:typing*`, `ai:abort`, `chat:read`).
