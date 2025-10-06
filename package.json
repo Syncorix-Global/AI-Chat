@@ -93,7 +93,6 @@
     }
   },
   "dependencies": {
-    "@syncorix/ai-chat-sdk": "link:",
     "socket.io-client": "^4.8.1"
   },
   "lint-staged": {
