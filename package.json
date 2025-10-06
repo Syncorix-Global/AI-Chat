@@ -1,6 +1,6 @@
 {
   "name": "@syncorix/ai-chat-sdk",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "description": "Type-safe Socket.IO SDK for building real-time AI chat UIs in the browser (streaming tokens, typing indicators, presence, reconnects).",
   "repository": {
     "type": "git",
