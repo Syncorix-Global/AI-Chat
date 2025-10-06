@@ -52,3 +52,10 @@ const chat = new AIChatSocket({
 - `onAny((event, ...args) => void)` — observe all topics (debug/telemetry)
 - `emitRaw(name, payload)` / `onRaw(name, cb)` / `offRaw(name, cb)` — escape hatches
 - Discovery (optional): `discoverEvents`, `discoveryRequestEvent`, `discoveryResponseEvent`
+
+## Options updates (additive)
+
+- `chatId` is **optional** for backends without rooms.
+- `joinEvent` can be set to `null` to **skip any room join**; if using a join, you can also provide a custom `joinPayload`.
+- Provide **arbitrary connect params** via `ioOptions.query` or `ioOptions.auth` (e.g., `{ consultationId }`).
+- `meta` (in `AIChatSocketOptions`) is **merged into every client→server emit**, alongside `chatId` if provided.

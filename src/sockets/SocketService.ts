@@ -14,10 +14,15 @@ export type HandlerMap<E extends EventMapLike> = Partial<
 /** Options for constructing the service. */
 export interface SocketServiceOptions<E extends EventMapLike> {
   url: string;
-  chatId: string | number;
 
-  /** Server event to join a room/channel (default: "chat:join"). */
-  joinEvent?: string;
+  /** (Legacy) Optional room/chat identifier. */
+  chatId?: string | number;
+
+  /** Server event to join a room/channel (default: "chat:join"). Set to null to skip join emit. */
+  joinEvent?: string | null;
+
+  /** Optional arbitrary payload to send when emitting the join event (takes precedence over chatId). */
+  joinPayload?: any;
 
   /** socket.io-client options (auth, transports, path, etc.). */
   ioOptions?: Partial<ManagerOptions & SocketOptions>;
@@ -38,10 +43,11 @@ export interface SocketServiceOptions<E extends EventMapLike> {
 export class SocketService<E extends EventMapLike> {
   private socket!: Socket;
   private readonly url: string;
-  private readonly chatId: string | number;
-  private readonly joinEvent: string;
+  private readonly chatId?: string | number;
+  private readonly joinEvent?: string | null;
   private readonly serverErrorEvent: string;
   private readonly ioOptions?: Partial<ManagerOptions & SocketOptions>;
+  private readonly joinPayload?: any;
   private connected = false;
 
   private registeredHandlers: Array<{ event: keyof E | string; listener: (...args: any[]) => void }> = [];
@@ -53,6 +59,7 @@ export class SocketService<E extends EventMapLike> {
     this.joinEvent = options.joinEvent ?? "chat:join";
     this.ioOptions = options.ioOptions;
     this.serverErrorEvent = options.serverErrorEvent ?? "error";
+    this.joinPayload = options.joinPayload;
 
     if (options.autoConnect ?? true) {
       this.connect(options.handlers);
@@ -73,7 +80,15 @@ export class SocketService<E extends EventMapLike> {
 
     this.socket.on("connect", () => {
       this.connected = true;
-      this.socket.emit(this.joinEvent, { chatId: this.chatId });
+
+      // Only emit a join if joinEvent is provided (not null/undefined).
+      if (this.joinEvent) {
+        // If joinPayload is given, use it; else fall back to legacy { chatId } if present; else emit undefined.
+        const payload = (this.joinPayload !== undefined)
+          ? this.joinPayload
+          : (this.chatId !== undefined ? { chatId: this.chatId } : undefined);
+        this.socket.emit(this.joinEvent, payload as any);
+      }
     });
 
     this.socket.on("disconnect", () => {

@@ -14,8 +14,8 @@ import { SocketService, type HandlerMap } from "@sockets/SocketService";
 
 export interface AIChatCallbacks {
   /* Connection lifecycle */
-  onConnect?: (info: { chatId: ChatID }) => void;
-  onDisconnect?: (info: { chatId: ChatID }) => void;
+  onConnect?: (info: { chatId: ChatID | undefined }) => void;
+  onDisconnect?: (info: { chatId: ChatID | undefined }) => void;
   onServerError?: (error: unknown) => void;
 
   /* Human chat */
@@ -61,11 +61,15 @@ function resolveEvent(key: EventKey, override?: EventNameMap): string {
 export interface AIChatSocketOptions {
   /** Required socket URL (e.g., https://realtime.example.com). */
   url: string;
-  /** Chat room identifier to join. */
-  chatId: ChatID;
 
-  /** Optional direct join event override (legacy). Prefer eventNames.JOIN. */
-  joinEvent?: string;
+  /** Chat room identifier to join (optional for arbitrary backends). */
+  chatId?: ChatID;
+
+  /** Optional direct join event override (legacy). Prefer eventNames.JOIN. Set null to skip join. */
+  joinEvent?: string | null;
+
+  /** Optional payload to send when emitting joinEvent; takes precedence over chatId. */
+  joinPayload?: any;
 
   /**
    * Socket.IO client options (auth, transports, path, extraHeaders, query, etc.)
@@ -92,6 +96,9 @@ export interface AIChatSocketOptions {
   discoverEvents?: boolean;
   discoveryRequestEvent?: string;  // default: "meta:events:request"
   discoveryResponseEvent?: string; // default: "meta:events:response"
+
+  /** Arbitrary key/values merged into all client→server emits (e.g., { consultationId }). */
+  meta?: Record<string, unknown>;
 }
 
 /**
@@ -100,16 +107,26 @@ export interface AIChatSocketOptions {
  * Event names are configurable at runtime.
  */
 export class AIChatSocket {
-  private readonly chatId: ChatID;
+  private readonly chatId?: ChatID;
   private readonly service: SocketService<Record<string, any>>;
   private callbacks: AIChatCallbacks;
 
   private events: EventNameMap; // user overrides
   private resolver?: (key: EventKey, defaultName: string) => string;
+  private meta: Record<string, unknown>;
 
   private name(key: EventKey): string {
     const def = DEFAULT_EVENT_KEYS[key];
     return this.resolver ? this.resolver(key, def) : resolveEvent(key, this.events);
+  }
+
+  private withMeta(extra?: Record<string, unknown>) {
+    // Legacy: include chatId if present, then merge custom meta and extras.
+    return {
+      ...(this.chatId !== undefined ? { chatId: this.chatId } : {}),
+      ...(this.meta ?? {}),
+      ...(extra ?? {}),
+    };
   }
 
   constructor(options: AIChatSocketOptions) {
@@ -117,6 +134,7 @@ export class AIChatSocket {
     this.callbacks = options.callbacks ?? {};
     this.events = options.eventNames ?? {};
     this.resolver = options.eventResolver;
+    this.meta = options.meta ?? {};
 
     const handlers: HandlerMap<Record<string, any>> = {
       [this.name("CHAT_MESSAGE")]: (e) => this.callbacks.onChatMessage?.(e),
@@ -131,12 +149,15 @@ export class AIChatSocket {
 
     this.service = new SocketService<Record<string, any>>({
       url: options.url,
-      chatId: options.chatId,
+      // joinEvent can be null to skip; joinPayload (if given) overrides chatId
       joinEvent: options.joinEvent ?? this.name("JOIN"),
+      joinPayload: options.joinPayload,
       ioOptions: options.ioOptions,
       handlers,
       autoConnect: options.autoConnect ?? true,
       serverErrorEvent: options.serverErrorEvent ?? "error",
+      // keep passing chatId for backward compatibility; it is optional in the service
+      chatId: this.chatId as any,
     });
 
     // Connection lifecycle passthrough WITHOUT relying on service.onConnect()
@@ -156,13 +177,13 @@ export class AIChatSocket {
       const res = options.discoveryResponseEvent ?? "meta:events:response";
 
       // Update map when server responds with catalog: Partial<Record<EventKey,string>>
-      this.service.on(res, (catalog: EventNameMap) => {
+      this.service.on(res, (catalog: Partial<Record<EventKey, string>>) => {
         if (catalog && typeof catalog === "object") {
           this.setEventNames(catalog);
         }
       });
 
-      const emitDiscovery = () => this.service.emit(req, { chatId: this.chatId });
+      const emitDiscovery = () => this.service.emit(req, this.withMeta());
       if (this.service.isConnected()) emitDiscovery();
       else this.service.on("connect", emitDiscovery);
     }
@@ -205,35 +226,39 @@ export class AIChatSocket {
     traceId?: string;
     requestId?: string;
   }): void {
-    this.service.emit(this.name("USER_MESSAGE"), {
-      chatId: this.chatId,
+    this.service.emit(this.name("USER_MESSAGE"), this.withMeta({
       messageId: params.messageId,
       userId: params.userId,
       text: params.text,
       parts: params.parts,
       traceId: params.traceId,
       requestId: params.requestId,
-    });
+    }));
   }
 
   /** Inform the server the user started typing. */
   typingStart(userId: UserID, traceId?: string): void {
-    this.service.emit(this.name("USER_TYPING_START"), { chatId: this.chatId, userId, traceId });
+    this.service.emit(this.name("USER_TYPING_START"), this.withMeta({ userId, traceId }));
   }
 
   /** Inform the server the user stopped typing. */
   typingStop(userId: UserID, traceId?: string): void {
-    this.service.emit(this.name("USER_TYPING_STOP"), { chatId: this.chatId, userId, traceId });
+    this.service.emit(this.name("USER_TYPING_STOP"), this.withMeta({ userId, traceId }));
   }
 
   /** Ask the server to abort the current AI response. */
   abort(reason?: string, traceId?: string): void {
-    this.service.emit(this.name("AI_ABORT"), { chatId: this.chatId, reason, traceId });
+    this.service.emit(this.name("AI_ABORT"), this.withMeta({ reason, traceId }));
   }
 
   /** Mark messages as read. */
   markRead(params: { userId: UserID; messageIds: string[]; readAt: string; traceId?: string }): void {
-    this.service.emit(this.name("CHAT_READ"), { chatId: this.chatId, ...params });
+    this.service.emit(this.name("CHAT_READ"), this.withMeta({
+      userId: params.userId,
+      messageIds: params.messageIds,
+      readAt: params.readAt,
+      traceId: params.traceId,
+    }));
   }
 
   /* -------------------- Advanced: wildcard & raw APIs -------------------- */

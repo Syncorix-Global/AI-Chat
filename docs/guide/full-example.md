@@ -14,6 +14,9 @@ This page walks through a **complete, frontend‑only** wiring that uses the sam
 
 > The code below is **your original implementation** (kept intact). We break it into sections and explain exactly what each part does and how it fits together. Keep your path aliases (e.g. `@sockets/*`, `@models`, `@interactions/*`) as you have them in your app.
 
+> **Update (socket flow)**  
+> You can now pass **arbitrary connect params** via `ioOptions.query`/`ioOptions.auth`, skip rooms with `joinEvent: null`, and stamp `meta` into every client→server emit. The rest of this page remains valid; only your **socket initialization** may change if your backend needs these.
+
 ---
 
 ## 0) Imports & Example Types
@@ -393,7 +396,7 @@ function toShape(): Row[] {
       row.system = { message: system.content.message, options: system.content.options, timestamp: system.content.timestamp };
     }
     row.status = path.process.status as Row["status"];
-    if (row.user || row.system) rows.push(row);
+    if (row.user or row.system) rows.push(row);
   }
   return rows;
 }
@@ -463,4 +466,4 @@ See **Guide → Testing** for complete Vitest tests. Suggestions:
 - use jsdom to test typing lifecycle with `TypingObserver`.
 
 > Tip: explicitly type arrays in tests to avoid `never[]` errors:  
-> `const names: Array<string | undefined> = []`.
+> `const names: Array<string | undefined> = [];`

@@ -1,4 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+// tests/ChatSDK.test.ts
+import { describe, it, expect, vi } from 'vitest'
 import { ChatSDK } from '@/sdk/ChatSDK'
 import { Conversation } from '@models'
 
@@ -15,8 +16,8 @@ import { Conversation } from '@models'
 type Cb = ReturnType<typeof makeCallbacks>
 function makeCallbacks() {
   return {
-    onConnect:        undefined as ((info: { chatId: any }) => void) | undefined,
-    onDisconnect:     undefined as ((info: { chatId: any }) => void) | undefined,
+    onConnect:        undefined as ((info?: { chatId?: any }) => void) | undefined,
+    onDisconnect:     undefined as ((info?: { chatId?: any }) => void) | undefined,
     onServerError:    undefined as ((error: unknown) => void) | undefined,
 
     onChatMessage:    undefined as ((e: any) => void) | undefined,
@@ -28,6 +29,7 @@ function makeCallbacks() {
     onAIError:        undefined as ((e: any) => void) | undefined,
   }
 }
+
 class MockAIChatSocket {
   callbacks: Cb = makeCallbacks()
   sent: any[] = []
@@ -35,10 +37,22 @@ class MockAIChatSocket {
   reads: any[] = []
   typing: any[] = []
   connected = false
+  connectPayload?: { chatId?: any }
+
+  constructor(connectPayload?: { chatId?: any }) {
+    this.connectPayload = connectPayload
+  }
 
   setCallbacks(cb: Partial<Cb>) { this.callbacks = { ...this.callbacks, ...cb } }
-  connect() { this.connected = true; this.callbacks.onConnect?.({ chatId: 'room-42' }) }
-  disconnect() { this.connected = false; this.callbacks.onDisconnect?.({ chatId: 'room-42' }) }
+  connect() {
+    this.connected = true
+    // allow undefined chatId for no-room servers
+    this.callbacks.onConnect?.(this.connectPayload)
+  }
+  disconnect() {
+    this.connected = false
+    this.callbacks.onDisconnect?.(this.connectPayload)
+  }
 
   sendMessage(payload: any) { this.sent.push(payload) }
   abort(reason?: string)    { this.aborts.push(reason) }
@@ -60,7 +74,7 @@ describe('ChatSDK', () => {
   const userId = 'u-123'
 
   it('sendText → creates pair, streams tokens, finalizes, and calls socket', async () => {
-    const sock = new MockAIChatSocket()
+    const sock = new MockAIChatSocket({ chatId })
     const sdk = new ChatSDK({
       socket: sock as any,
       chatId,
@@ -101,8 +115,29 @@ describe('ChatSDK', () => {
     offCU(); offSC(); offTK(); offMX(); offSU(); offER()
   })
 
+  it('works with no-room servers (no chatId in lifecycle payloads)', async () => {
+    // connect() will call onConnect(undefined) or { chatId: undefined }
+    const sock = new MockAIChatSocket() // no chatId payload
+    const sdk = new ChatSDK({ socket: sock as any, chatId, userId })
+
+    const updates: number[] = []
+    const offCU = sdk.on('conversation:update', ({ conversation }) => updates.push(conversation.nodes.length))
+
+    sock.connect()
+
+    // Should still be able to send and receive without a room
+    const pair = await sdk.sendText('Ping')
+    sock.emitToken({ token: 'P', index: 0 })
+    sock.emitMessage({ text: 'Pong', createdAt: new Date().toISOString() })
+
+    expect(pair).toBeTruthy()
+    expect(updates.length).toBeGreaterThan(0)
+
+    offCU()
+  })
+
   it('abort and markRead delegate to socket', async () => {
-    const sock = new MockAIChatSocket()
+    const sock = new MockAIChatSocket({ chatId })
     const sdk = new ChatSDK({ socket: sock as any, chatId, userId })
 
     await sdk.sendText('Yo')
@@ -114,7 +149,7 @@ describe('ChatSDK', () => {
   })
 
   it('handles AI errors and presence/chat passthrough', async () => {
-    const sock = new MockAIChatSocket()
+    const sock = new MockAIChatSocket({ chatId })
     const sdk = new ChatSDK({ socket: sock as any, chatId, userId })
 
     const errs: any[] = []
@@ -125,7 +160,7 @@ describe('ChatSDK', () => {
     const offC = sdk.on('chat:message', e => chats.push(e.text))
     const offP = sdk.on('presence:update', e => pres.push(e.onlineUserIds))
 
-    const pair = await sdk.sendText('Boom me')
+    await sdk.sendText('Boom me')
     sock.emitError({ code: 'X', message: 'nope' })
     sock.emitPresence({ onlineUserIds: [userId, 'u-222'] })
     sock.emitChat({ text: 'hello from server', createdAt: new Date().toISOString() })
